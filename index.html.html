@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tours Performance Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f5f5f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #2c2c2a; min-height: 100vh; }
+.header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 24px 36px 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+.header h1 { font-size: 26px; font-weight: 600; color: #1a1a18; }
+.header .sub { font-size: 13px; color: #888; margin-top: 4px; }
+.header .meta { text-align: right; font-size: 12px; color: #888; }
+.header .meta strong { display: block; font-size: 13px; color: #378ADD; }
+.tnav { background: #fff; display: flex; padding: 0 36px; border-bottom: 1px solid #e0e0d8; }
+.tn { padding: 12px 20px; font-size: 13px; background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; color: #888; font-family: inherit; margin-bottom: -1px; transition: color .15s; }
+.tn.on { color: #1a1a18; border-bottom-color: #378ADD; font-weight: 500; }
+.tn:hover:not(.on) { color: #444; }
+.content { padding: 28px 36px; max-width: 1200px; }
+.tp { display: none; } .tp.on { display: block; }
+.mc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+.mv { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 16px 20px; }
+.ml { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.mn { font-size: 26px; font-weight: 600; color: #1a1a18; line-height: 1; }
+.ms { font-size: 12px; color: #888; margin-top: 4px; }
+.badge { display: inline-block; font-size: 11px; padding: 3px 9px; border-radius: 6px; margin-top: 8px; font-weight: 500; }
+.bg { background: #eaf3de; color: #3b6d11; }
+.br { background: #fcebeb; color: #a32d2d; }
+.bi { background: #e6f1fb; color: #185fa5; }
+.ba { background: #faeeda; color: #854f0b; }
+.card { background: #fff; border: 1px solid #e8e8e0; border-radius: 10px; padding: 24px; margin-bottom: 22px; }
+.ct { font-size: 14px; font-weight: 600; color: #1a1a18; margin-bottom: 3px; }
+.cd { font-size: 12px; color: #888; margin-bottom: 14px; }
+.lg { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 12px; font-size: 12px; color: #555; }
+.lg span { display: flex; align-items: center; gap: 5px; }
+.ls { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 22px; align-items: start; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { font-size: 11px; font-weight: 500; color: #888; padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; text-transform: uppercase; letter-spacing: 0.04em; }
+td { padding: 9px 12px; border-bottom: 1px solid #f0f0ea; color: #2c2c2a; }
+tr:last-child td { border-bottom: none; }
+.r { text-align: right; } .dim { color: #888; }
+.eng-bar { height: 8px; background: #e8e8e0; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.eng-fill { height: 100%; border-radius: 4px; }
+.loading-overlay { position: fixed; inset: 0; background: rgba(245,245,240,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 14px; }
+.spinner { width: 32px; height: 32px; border: 3px solid #e0e0d8; border-top-color: #378ADD; border-radius: 50%; animation: spin .7s linear infinite; }
+.load-txt { font-size: 14px; color: #888; }
+.error-banner { background: #fcebeb; border: 1px solid #f5c6c6; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 13px; color: #a32d2d; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 768px) {
+  .mc { grid-template-columns: 1fr 1fr; }
+  .g2 { grid-template-columns: 1fr; }
+  .header, .tnav, .content { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="load-txt">Fetching live data…</div>
+</div>
+
+<div class="header">
+  <div>
+    <div class="sub">Tours Intelligence · EMEA</div>
+    <h1>Performance Dashboard</h1>
+  </div>
+  <div class="meta">
+    <span id="last-updated">Loading…</span>
+    <strong id="market-count">— Markets</strong>
+  </div>
+</div>
+
+<div class="tnav">
+  <button class="tn on" onclick="switchTab(this,'overview')">Overview</button>
+  <button class="tn" onclick="switchTab(this,'markets')">Markets</button>
+  <button class="tn" onclick="switchTab(this,'products')">Products</button>
+  <button class="tn" onclick="switchTab(this,'quality')">Quality</button>
+  <button class="tn" onclick="switchTab(this,'engagement')">Engagement</button>
+  <button class="tn" onclick="switchTab(this,'insights')">MMR Insights ✦</button>
+</div>
+
+<div class="content">
+  <div class="error-banner" id="err-banner"></div>
+
+  <div id="tp-overview" class="tp on">
+    <div class="mc" id="overview-kpis"></div>
+    <div class="card">
+      <div class="ct">Monthly tour volume</div>
+      <div class="cd">Jan 2025 – Apr 2026 · *Apr 2026 estimated</div>
+      <div class="lg">
+        <span><span class="ls" style="background:#378ADD;"></span>2025</span>
+        <span><span class="ls" style="background:#E89B2A;"></span>2026 YTD</span>
+      </div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="c-monthly"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Tour level mix — Mar 2026</div>
+        <div class="cd">Tours at each level this month</div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c-levels-mar"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Offer mix — Mar 2026</div>
+        <div class="cd">Tours by offer type this month</div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c-offers-mar"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tp-markets" class="tp">
+    <div class="g2">
+      <div class="card" style="margin-bottom:0;">
+        <div class="ct">Tours YTD 2026 by market</div>
+        <div class="cd">Sorted by volume</div>
+        <div style="position:relative;width:100%;height:500px;"><canvas id="c-ytd"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="ct">Q1 YoY growth by market</div>
+        <div class="cd">Q1 2025 vs Q1 2026</div>
+        <div class="lg">
+          <span><span class="ls" style="background:#639922;"></span>≥100%</span>
+          <span><span class="ls" style="background:#1D9E75;"></span>50–99%</span>
+          <span><span class="ls" style="background:#E89B2A;"></span>&lt;50%</span>
+          <span><span class="ls" style="background:#888780;"></span>0%</span>
+        </div>
+        <div style="position:relative;width:100%;height:500px;"><canvas id="c-yoy"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Market summary</div>
+      <div class="cd">YTD 2026 vs Jan–Mar 2025 vs Full Year 2025</div>
+      <table><thead><tr><th>Market</th><th class="r">Jan–Mar 2025</th><th class="r">Full Year 2025</th><th class="r">YTD 2026</th><th class="r">Q1 YoY</th></tr></thead><tbody id="market-table"></tbody></table>
+    </div>
+  </div>
+
+  <div id="tp-products" class="tp">
+    <div class="card">
+      <div class="ct">Offer frequency — 2025 vs 2026 YTD</div>
+      <div class="cd">% of tours that included each offer type</div>
+      <div class="lg">
+        <span><span class="ls" style="background:#73726c;"></span>2025</span>
+        <span><span class="ls" style="background:#378ADD;"></span>2026 YTD</span>
+      </div>
+      <div style="position:relative;width:100%;height:280px;"><canvas id="c-offers"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Tour level mix — 2025 vs 2026 YTD</div>
+        <div class="cd">Percentage of tours at each level</div>
+        <div class="lg">
+          <span><span class="ls" style="background:#73726c;"></span>2025</span>
+          <span><span class="ls" style="background:#378ADD;"></span>2026 YTD</span>
+        </div>
+        <div style="position:relative;width:100%;height:220px;"><canvas id="c-levels-comp"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Key product changes</div>
+        <table style="margin-top:8px"><thead><tr><th>Offer</th><th class="r">2025</th><th class="r">2026 YTD</th><th class="r">Change</th></tr></thead>
+        <tbody id="product-changes"></tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Average monthly tours — Q1 2025 vs Q1 2026</div>
+      <div class="cd">Average tours per month in Q1 by market</div>
+      <div class="lg">
+        <span><span class="ls" style="background:#73726c;"></span>Q1 2025</span>
+        <span><span class="ls" style="background:#378ADD;"></span>Q1 2026</span>
+      </div>
+      <div style="position:relative;width:100%;height:280px;"><canvas id="c-avg"></canvas></div>
+    </div>
+  </div>
+
+  <div id="tp-quality" class="tp">
+    <div class="g2">
+      <div class="card" style="margin-bottom:0;">
+        <div class="ct">Errors per tour — Feb/Mar 2026</div>
+        <div class="cd">Sorted worst to best</div>
+        <div class="lg">
+          <span><span class="ls" style="background:#E24B4A;"></span>&gt;1.5 poor</span>
+          <span><span class="ls" style="background:#E89B2A;"></span>0.7–1.5 fair</span>
+          <span><span class="ls" style="background:#1D9E75;"></span>0–0.7 good</span>
+          <span><span class="ls" style="background:#639922;"></span>0.0 excellent</span>
+        </div>
+        <div style="position:relative;width:100%;height:500px;"><canvas id="c-errrate"></canvas></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="ct">Error types — Feb/Mar 2026</div>
+          <div class="cd">Total occurrences across all markets</div>
+          <div style="position:relative;width:100%;height:300px;"><canvas id="c-errtypes"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ct">Market quality table</div>
+          <table><thead><tr><th>Market</th><th class="r">Tours</th><th class="r">Errors</th><th class="r">Rate</th><th class="r">Rating</th></tr></thead><tbody id="quality-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MMR INSIGHTS -->
+  <div id="tp-insights" class="tp">
+    <div class="mc" id="insights-kpis">
+      <div class="mv"><div class="ml">Analysis status</div><div class="mn" style="font-size:15px;margin-top:4px;">Loading…</div><div class="ms">Analysing Slack messages</div></div>
+      <div class="mv"><div class="loading"><div class="spinner"></div></div></div>
+      <div class="mv"><div class="loading"><div class="spinner"></div></div></div>
+      <div class="mv"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Recurring themes</div>
+        <div class="cd">AI-identified topics raised by markets — sized by frequency</div>
+        <div id="themes-container" style="min-height:200px;"><div class="loading"><div class="spinner"></div>Analysing themes…</div></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Market participation</div>
+        <div class="cd">Messages sent per market rep (excl. central team)</div>
+        <div style="position:relative;width:100%;height:360px;"><canvas id="c-participation"></canvas></div>
+      </div>
+    </div>
+    <div class="g2" style="margin-top:22px">
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Sentiment by market</div>
+        <div class="cd">Overall tone of each market's contributions</div>
+        <div id="sentiment-container" style="min-height:180px;"><div class="loading"><div class="spinner"></div>Analysing sentiment…</div></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Unresolved threads</div>
+        <div class="cd">Questions or issues without a central team response</div>
+        <div id="unresolved-container" style="min-height:180px;"><div class="loading"><div class="spinner"></div>Identifying unresolved threads…</div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:22px">
+      <div class="ct">Strategic recommendations</div>
+      <div class="cd">AI-generated suggestions based on channel activity</div>
+      <div id="recommendations-container" style="min-height:120px;"><div class="loading"><div class="spinner"></div>Generating recommendations…</div></div>
+    </div>
+    <div style="text-align:right;font-size:11px;color:#aaa;margin-top:8px;" id="insights-timestamp"></div>
+  </div>
+
+  <div id="tp-engagement" class="tp">
+    <div class="mc" id="eng-kpis"></div>
+    <div class="g2">
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Call attendance by market</div>
+        <div class="cd">Markets that attended the MMR call</div>
+        <div style="position:relative;width:100%;height:440px;"><canvas id="c-calls"></canvas></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="ct">Slack channel activity by market</div>
+        <div class="cd">Total comments &amp; replies</div>
+        <div style="position:relative;width:100%;height:440px;"><canvas id="c-slack"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Engagement overview</div>
+      <div class="cd">Combined call attendance + Slack activity per market</div>
+      <table><thead><tr><th>Market</th><th class="r">Call Attended</th><th class="r">Slack Activity</th><th>Engagement Level</th></tr></thead>
+      <tbody id="eng-table"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsnPVSqEsknTbkBQiIXq5jw4hbP8zDYDRcs5smetGhRMaPqxaQjHOj7nr_PCAI7D2fTNHrf4dtsHlm/pub?output=csv';
+const CHARTS = {};
+const BF = {family:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',size:12};
+const TC = '#666', GC = 'rgba(0,0,0,0.06)';
+
+// ── CSV parser ────────────────────────────────────────────────
+function parseCSV(text) {
+  const rows = [], lines = text.split('\n');
+  for (const line of lines) {
+    const row = [], re = /("([^"]*)")|([^,]*)/g;
+    let m, last = 0;
+    const parts = line.split(',').map(v => v.trim().replace(/^"|"$/g,''));
+    rows.push(parts);
+  }
+  return rows;
+}
+
+// Split rows into named sections based on SECTION: marker in col A
+function extractSections(rows) {
+  const sections = {}, cur = {name:null, rows:[]};
+  for (const row of rows) {
+    const a = (row[0]||'').trim();
+    if (a.toUpperCase().startsWith('SECTION:')) {
+      if (cur.name) sections[cur.name] = cur.rows;
+      cur.name = a.replace(/SECTION:/i,'').trim().toUpperCase();
+      cur.rows = [];
+    } else if (cur.name && row.some(c=>c!=='')) {
+      cur.rows.push(row);
+    }
+  }
+  if (cur.name) sections[cur.name] = cur.rows;
+  return sections;
+}
+
+function n(v) { return parseFloat((v||'').toString().replace('%','').replace(',','')) || 0; }
+function pct(v) { const s=(v||'').toString().trim(); return s.endsWith('%') ? parseFloat(s)/100 : parseFloat(s)||0; }
+
+// ── Colour helpers ────────────────────────────────────────────
+function yoyColor(v) { if(v>=100)return'#639922';if(v>=50)return'#1D9E75';if(v>0)return'#E89B2A';return'#888780'; }
+function errColor(v) { if(v>1.5)return'#E24B4A';if(v>=0.7)return'#E89B2A';if(v>0)return'#1D9E75';return'#639922'; }
+
+function switchTab(btn, id) {
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('tp-'+id).classList.add('on');
+  btn.classList.add('on');
+  setTimeout(()=>{ Object.values(CHARTS).forEach(ch=>{ try{ch.resize();}catch(e){} }); },50);
+}
+
+function destroyChart(id) { if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; } }
+
+// ── Main build ────────────────────────────────────────────────
+async function loadAndBuild() {
+  try {
+    const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const S = extractSections(rows);
+
+    console.log('Sections found:', Object.keys(S));
+
+    buildDashboard(S);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('last-updated').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+  } catch(e) {
+    document.getElementById('loader').style.display = 'none';
+    const eb = document.getElementById('err-banner');
+    eb.style.display = 'block';
+    eb.textContent = '⚠️ Could not load live data: ' + e.message + '. Showing last known data.';
+    buildFallback();
+  }
+}
+
+function buildDashboard(S) {
+  // ── Helper: find section by partial key match ──
+  function sec(key) {
+    const k = Object.keys(S).find(k => k.includes(key.toUpperCase()));
+    return k ? S[k] : [];
+  }
+
+  // ── MONTHLY TOURS ──
+  const monthRows = sec('MONTHLY');
+  let months=[], vals25=[], vals26=[];
+  if (monthRows.length >= 2) {
+    // Row 0 = header (Month, Jan-25, Feb-25…), Row 1 = No. of tours
+    const hdrs = monthRows[0].slice(1).filter(h=>h);
+    const vals = monthRows[1] ? monthRows[1].slice(1) : [];
+    hdrs.forEach((h,i) => {
+      const v = n(vals[i]);
+      if (h.includes('25')) { months.push(h); vals25.push(v); }
+      else { months.push(h); vals26.push(v); }
+    });
+  }
+  const allMonthLabels = [...months];
+  const data25 = vals25.map((v,i)=>({x:i,y:v}));
+  const data26 = vals26.map((v,i)=>({x:vals25.length+i,y:v}));
+
+  // ── MARKETS ──
+  const mktRows = sec('MARKET');
+  const markets = [];
+  // Skip header row, parse: Country | YTD 2026 | Country | Jan-Mar 2025 | Country | Full Year 2025
+  for (let i=1; i<mktRows.length; i++) {
+    const r = mktRows[i];
+    if (!r[0] || r[0].toLowerCase()==='country') continue;
+    markets.push({ c: r[0], ytd: n(r[1]), q1_25: n(r[3]), fy25: n(r[5]) });
+  }
+
+  // ── AVG TOURS ──
+  const avgRows = sec('AVG');
+  const avgMap = {};
+  for (let i=1; i<avgRows.length; i++) {
+    const r = avgRows[i];
+    if (!r[0]||r[0].toLowerCase()==='country') continue;
+    avgMap[r[0]] = { q1_25: n(r[1]), q1_26: n(r[3]||r[4]), yoy: n(r[4]||r[5]) };
+  }
+  markets.forEach(m => {
+    const a = avgMap[m.c] || {};
+    m.q1_25_avg = a.q1_25 || 0;
+    m.q1_26_avg = a.q1_26 || 0;
+    m.yoy = a.yoy || (m.q1_25 > 0 ? Math.round((m.ytd/m.q1_25-1)*100) : 0);
+  });
+
+  // ── QUALITY ──
+  const qualRows = sec('QUALITY');
+  const qualMap = {};
+  for (let i=1; i<qualRows.length; i++) {
+    const r = qualRows[i];
+    if (!r[0]||r[0].toLowerCase()==='market') continue;
+    qualMap[r[0]] = { tours2m: n(r[1]), errors: n(r[2]), errRate: n(r[3]) };
+  }
+  markets.forEach(m => {
+    const q = qualMap[m.c] || {};
+    m.tours2m = q.tours2m || 0;
+    m.errors = q.errors || 0;
+    m.errRate = q.errRate || 0;
+  });
+
+  // ── ERROR TYPES ──
+  const errRows = sec('ERROR TYPE');
+  const errTypes = [];
+  for (let i=1; i<errRows.length; i++) {
+    const r = errRows[i];
+    if (!r[0]) continue;
+    errTypes.push({ t: r[0], n: n(r[1]) });
+  }
+
+  // ── OFFERS ──
+  const offRows = sec('OFFER');
+  const offers25=[], offers26=[], offerLabels=[];
+  for (let i=1; i<offRows.length; i++) {
+    const r = offRows[i];
+    if (!r[0]||r[0].toLowerCase()==='offer') continue;
+    offerLabels.push(r[0]);
+    offers25.push(n(r[1]));
+    offers26.push(n(r[3]||r[2]));
+  }
+
+  // ── TOUR LEVELS ──
+  const lvlRows = sec('LEVEL');
+  const lvl25=[], lvl26=[], lvlLabels=[];
+  for (let i=1; i<lvlRows.length; i++) {
+    const r = lvlRows[i];
+    if (!r[0]||r[0].toLowerCase().includes('level')&&i===1) continue;
+    if (!r[0]) continue;
+    lvlLabels.push(r[0]);
+    lvl25.push(n(r[1]));
+    lvl26.push(n(r[2]));
+  }
+
+  // ── MAR 2026 LEVELS & OFFERS ──
+  const mar26Rows = sec('MAR');
+  const marLvls={}, marOffers={};
+  let parseMode=null;
+  for (const r of mar26Rows) {
+    const a=(r[0]||r[1]||'').trim();
+    if(a.toLowerCase().includes('level')) parseMode='level';
+    else if(a.toLowerCase().includes('offer')||a.toLowerCase().includes('platinum')||a.toLowerCase().includes('vip')) parseMode='offer';
+    if(a.match(/level\s*\d/i)) marLvls[a]=n(r[1]||r[2]);
+    else if(parseMode==='offer'&&a&&!a.toLowerCase().includes('offer')) marOffers[a]=n(r[1]||r[2]||r[3]);
+  }
+
+  // ── ENGAGEMENT ──
+  const engRows = sec('ENGAGEMENT');
+  const engagement = [];
+  for (let i=1; i<engRows.length; i++) {
+    const r = engRows[i];
+    if (!r[0]||r[0].toLowerCase()==='market') continue;
+    engagement.push({ m: r[0], call: n(r[1]), slack: n(r[2]) });
+  }
+
+  // ── NOW BUILD CHARTS ──
+
+  // Overview KPIs
+  const totalYTD = markets.reduce((s,m)=>s+m.ytd,0);
+  const topGrowth = [...markets].sort((a,b)=>b.yoy-a.yoy)[0]||{c:'—',yoy:0};
+  const bestQ = [...markets].sort((a,b)=>a.errRate-b.errRate)[0]||{c:'—',errRate:0};
+  const mar26total = vals26[2]||0;
+  document.getElementById('overview-kpis').innerHTML = `
+    <div class="mv"><div class="ml">YTD 2026 Tours</div><div class="mn">${totalYTD}</div><div class="ms">across ${markets.length} markets</div></div>
+    <div class="mv"><div class="ml">Mar 2026 Tours</div><div class="mn">${mar26total}</div><div class="badge bg">Record month</div></div>
+    <div class="mv"><div class="ml">Fastest Growing</div><div class="mn" style="font-size:18px;margin-top:4px;">${topGrowth.c}</div><div class="badge bg">+${topGrowth.yoy}% YoY</div></div>
+    <div class="mv"><div class="ml">Best Quality</div><div class="mn" style="font-size:18px;margin-top:4px;">${bestQ.c}</div><div class="badge bg">${bestQ.errRate===0?'0 errors':bestQ.errRate.toFixed(2)+' err/tour'}</div></div>
+  `;
+  document.getElementById('market-count').textContent = markets.length + ' Markets';
+
+  // Monthly chart
+  const mlabels = allMonthLabels.length ? allMonthLabels : ['Jan 25','Feb 25','Mar 25','Apr 25','May 25','Jun 25','Jul 25','Aug 25','Sep 25','Oct 25','Nov 25','Dec 25','Jan 26','Feb 26','Mar 26','Apr 26*'];
+  const d25 = [...vals25, ...Array(vals26.length).fill(null)];
+  const d26 = [...Array(vals25.length).fill(null), ...vals26];
+  destroyChart('monthly');
+  CHARTS.monthly = new Chart(document.getElementById('c-monthly'), {
+    type:'line',
+    data:{ labels:mlabels, datasets:[
+      {label:'2025',data:d25,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.07)',borderWidth:2,pointRadius:4,fill:true,tension:0.3,spanGaps:false},
+      {label:'2026 YTD',data:d26,borderColor:'#E89B2A',backgroundColor:'rgba(232,155,42,0.07)',borderWidth:2,pointRadius:4,fill:true,tension:0.3,spanGaps:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC,maxRotation:45,autoSkip:false}},y:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true}}}
+  });
+
+  // Mar 2026 doughnuts
+  const lvlMar = Object.keys(marLvls).length ? Object.keys(marLvls) : ['Level 1','Level 2','Level 3'];
+  const lvlMarVals = Object.keys(marLvls).length ? Object.values(marLvls) : [2,5,7];
+  destroyChart('levelsMar');
+  CHARTS.levelsMar = new Chart(document.getElementById('c-levels-mar'), {
+    type:'doughnut',
+    data:{labels:lvlMar,datasets:[{data:lvlMarVals,backgroundColor:['#73726c','#378ADD','#E89B2A'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:BF,color:TC,padding:16}}}}
+  });
+  const offerMarLabels = Object.keys(marOffers).length ? Object.keys(marOffers) : ['Platinum','No offer','VIP','AAA Tour','ASU'];
+  const offerMarVals = Object.keys(marOffers).length ? Object.values(marOffers) : [10,2,5,2,1];
+  destroyChart('offersMar');
+  CHARTS.offersMar = new Chart(document.getElementById('c-offers-mar'), {
+    type:'doughnut',
+    data:{labels:offerMarLabels,datasets:[{data:offerMarVals,backgroundColor:['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A'],borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:BF,color:TC,padding:12}}}}
+  });
+
+  // Markets
+  const ytdS=[...markets].sort((a,b)=>b.ytd-a.ytd);
+  destroyChart('ytd');
+  CHARTS.ytd = new Chart(document.getElementById('c-ytd'), {
+    type:'bar',data:{labels:ytdS.map(c=>c.c),datasets:[{data:ytdS.map(c=>c.ytd),backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const yoyS=[...markets].sort((a,b)=>b.yoy-a.yoy);
+  destroyChart('yoy');
+  CHARTS.yoy = new Chart(document.getElementById('c-yoy'), {
+    type:'bar',data:{labels:yoyS.map(c=>c.c),datasets:[{data:yoyS.map(c=>c.yoy),backgroundColor:yoyS.map(c=>yoyColor(c.yoy)),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw}%`}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC,callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const mt=document.getElementById('market-table'); mt.innerHTML='';
+  ytdS.forEach(c=>{
+    const cls=c.yoy>=100?'bg':c.yoy>=50?'bi':c.yoy>0?'ba':'br';
+    mt.innerHTML+=`<tr><td>${c.c}</td><td class="r dim">${c.q1_25}</td><td class="r dim">${c.fy25}</td><td class="r">${c.ytd}</td><td class="r"><span class="badge ${cls}">${c.yoy>0?'+':''}${c.yoy}%</span></td></tr>`;
+  });
+
+  // Products — offers
+  destroyChart('offers');
+  CHARTS.offers = new Chart(document.getElementById('c-offers'), {
+    type:'bar',
+    data:{labels:offerLabels.length?offerLabels:['Platinum','VIP Packages','AAA Tour','TM Request','Artist Sign-Up','No Offer'],
+      datasets:[{label:'2025',data:offers25.length?offers25:[74,0,5,0,2,19],backgroundColor:'#73726c',borderRadius:4},{label:'2026 YTD',data:offers26.length?offers26:[72,38,24,14,3,7],backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}},y:{grid:{color:GC},ticks:{font:BF,color:TC,callback:v=>v+'%'},max:90}}}
+  });
+
+  // Product changes table
+  const pc=document.getElementById('product-changes'); pc.innerHTML='';
+  const offL=offerLabels.length?offerLabels:['Platinum','VIP Packages','AAA Tour','TM Request','Artist Sign-Up','No Offer'];
+  offL.forEach((o,i)=>{
+    const v25=offers25[i]||0, v26=offers26[i]||0, diff=v26-v25;
+    const cls=diff>0?'bg':diff<0?'br':'bi';
+    const sign=diff>0?'+':'';
+    pc.innerHTML+=`<tr><td>${o}</td><td class="r dim">${v25}%</td><td class="r">${v26}%</td><td class="r"><span class="badge ${cls}">${sign}${diff}pp</span></td></tr>`;
+  });
+
+  // Level comparison
+  destroyChart('levelsComp');
+  CHARTS.levelsComp = new Chart(document.getElementById('c-levels-comp'), {
+    type:'bar',
+    data:{labels:lvlLabels.length?lvlLabels:['Level 1','Level 2','Level 3'],
+      datasets:[{label:'2025',data:lvl25.length?lvl25:[25.64,41.03,33.33],backgroundColor:'#73726c',borderRadius:4},{label:'2026',data:lvl26.length?lvl26:[23.21,46.43,30.36],backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:BF,color:TC}},y:{grid:{color:GC},ticks:{font:BF,color:TC,callback:v=>v+'%'},max:60}}}
+  });
+
+  // Avg monthly tours
+  const avgS=[...markets].sort((a,b)=>b.q1_26_avg-a.q1_26_avg);
+  destroyChart('avg');
+  CHARTS.avg = new Chart(document.getElementById('c-avg'), {
+    type:'bar',
+    data:{labels:avgS.map(c=>c.c),
+      datasets:[{label:'Q1 2025',data:avgS.map(c=>c.q1_25_avg),backgroundColor:'#73726c',borderRadius:4},{label:'Q1 2026',data:avgS.map(c=>c.q1_26_avg),backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:BF.family,size:10},color:TC,maxRotation:40}},y:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true}}}
+  });
+
+  // Quality
+  const errS=[...markets].sort((a,b)=>b.errRate-a.errRate);
+  destroyChart('errrate');
+  CHARTS.errrate = new Chart(document.getElementById('c-errrate'), {
+    type:'bar',data:{labels:errS.map(c=>c.c),datasets:[{data:errS.map(c=>c.errRate),backgroundColor:errS.map(c=>errColor(c.errRate)),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toFixed(2)}`}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},max:3},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const etS=[...errTypes].sort((a,b)=>b.n-a.n);
+  destroyChart('errtypes');
+  CHARTS.errtypes = new Chart(document.getElementById('c-errtypes'), {
+    type:'bar',data:{labels:etS.map(e=>e.t),datasets:[{data:etS.map(e=>e.n),backgroundColor:'#7F77DD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const qt=document.getElementById('quality-table'); qt.innerHTML='';
+  [...markets].sort((a,b)=>a.errRate-b.errRate).forEach(c=>{
+    let rating,cls;
+    if(c.errRate===0){rating='Excellent';cls='bg';}else if(c.errRate<0.5){rating='Good';cls='bi';}else if(c.errRate<1){rating='Fair';cls='ba';}else{rating='Poor';cls='br';}
+    qt.innerHTML+=`<tr><td>${c.c}</td><td class="r dim">${c.tours2m}</td><td class="r dim">${c.errors}</td><td class="r">${c.errRate.toFixed(2)}</td><td class="r"><span class="badge ${cls}">${rating}</span></td></tr>`;
+  });
+
+  // Engagement
+  const totalSlack=engagement.reduce((s,e)=>s+e.slack,0);
+  const callCount=engagement.filter(e=>e.call).length;
+  const topSlack=[...engagement].sort((a,b)=>b.slack-a.slack)[0]||{m:'—',slack:0};
+  const active=engagement.filter(e=>e.call||e.slack);
+  document.getElementById('eng-kpis').innerHTML=`
+    <div class="mv"><div class="ml">Markets on call</div><div class="mn">${callCount}</div><div class="ms">of ${engagement.length} markets</div></div>
+    <div class="mv"><div class="ml">Total Slack activity</div><div class="mn">${totalSlack}</div><div class="ms">comments &amp; replies</div></div>
+    <div class="mv"><div class="ml">Most active on Slack</div><div class="mn" style="font-size:18px;margin-top:4px;">${topSlack.m}</div><div class="badge bg">${topSlack.slack} interactions</div></div>
+    <div class="mv"><div class="ml">Active markets</div><div class="mn">${active.length}</div><div class="ms">at least one touchpoint</div><div class="badge bi">of ${engagement.length} total</div></div>
+  `;
+  const callMkts=engagement.filter(e=>e.call);
+  destroyChart('calls');
+  CHARTS.calls = new Chart(document.getElementById('c-calls'), {
+    type:'bar',data:{labels:callMkts.map(e=>e.m),datasets:[{data:callMkts.map(()=>1),backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:()=>' Attended'}}},
+      scales:{x:{display:false,max:1.5},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const slackA=[...engagement].filter(e=>e.slack>0).sort((a,b)=>b.slack-a.slack);
+  const maxSlack=Math.max(...slackA.map(e=>e.slack),1);
+  destroyChart('slack');
+  CHARTS.slack = new Chart(document.getElementById('c-slack'), {
+    type:'bar',data:{labels:slackA.map(e=>e.m),datasets:[{data:slackA.map(e=>e.slack),backgroundColor:'#7F77DD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+  const et2=document.getElementById('eng-table'); et2.innerHTML='';
+  [...engagement].sort((a,b)=>(b.call+b.slack)-(a.call+a.slack)).forEach(e=>{
+    const score=e.call+(e.slack>0?1:0);
+    const pct2=Math.round(e.slack/maxSlack*100)||0;
+    et2.innerHTML+=`<tr>
+      <td>${e.m}</td>
+      <td class="r">${e.call?'<span class="badge bg">✓ Yes</span>':'<span class="badge br">✗ No</span>'}</td>
+      <td class="r">${e.slack||'—'}</td>
+      <td style="min-width:140px;padding-right:16px">
+        <div style="font-size:11px;color:#888;margin-bottom:3px">${e.slack>0?e.slack+' interactions':e.call?'Call only':'No activity'}</div>
+        <div class="eng-bar"><div class="eng-fill" style="width:${pct2}%;background:${e.slack>8?'#378ADD':e.slack>3?'#7F77DD':'#aaa'}"></div></div>
+      </td></tr>`;
+  });
+}
+
+// Fallback with hardcoded data if fetch fails
+function buildFallback() {
+  document.getElementById('err-banner').textContent = '⚠️ Live data unavailable in this preview environment — showing embedded data. Download the dashboard to use the live Google Sheets connection.';
+  document.getElementById('err-banner').style.display = 'block';
+
+  // Build using static sections matching the live sheet structure
+  const S = buildStaticSections();
+  buildDashboard(S);
+}
+
+function buildStaticSections() {
+  // Mirrors the Google Sheet data from screenshots
+  return {
+    'MONTHLY TOURS': [
+      ['Month','Jan-25','Feb-25','Mar-25','Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26'],
+      ['No. of tours','6','7','4','7','8','2','1','4','9','5','3','6','6','9','14','10'],
+    ],
+    'NO. TOURS BY MARKET': [
+      ['Country','Tours YTD (2026)','Country','Tours Jan-Mar (2025)','Country','Tours (2025)'],
+      ['France','25','France','16','France','55'],
+      ['Germany','26','Germany','15','Germany','56'],
+      ['UK','26','UK','16','UK','57'],
+      ['Netherlands','23','Netherlands','15','Netherlands','51'],
+      ['Spain','9','Spain','8','Spain','24'],
+      ['Italy','9','Italy','9','Italy','28'],
+      ['Belgium','13','Belgium','5','Belgium','26'],
+      ['Ireland','10','Ireland','6','Ireland','28'],
+      ['Switzerland','10','Switzerland','5','Switzerland','23'],
+      ['Poland','10','Poland','4','Poland','21'],
+      ['Denmark','9','Denmark','3','Denmark','19'],
+      ['Sweden','8','Sweden','3','Sweden','17'],
+      ['Czech Rep.','7','Czech Rep.','3','Czech Rep.','12'],
+      ['Norway','6','Norway','1','Norway','9'],
+      ['Austria','4','Austria','1','Austria','5'],
+    ],
+    'AVERAGE MONTHLY TOURS': [
+      ['Country','Avg Tours Q1 2025','','Country','Avg Tours Q1 2026','Increase YoY'],
+      ['France','5.3','','France','8.3','57'],
+      ['UK','5.3','','UK','8.7','64'],
+      ['Germany','5','','Germany','8.7','73'],
+      ['Netherlands','5','','Netherlands','7.7','53'],
+      ['Spain','2.7','','Spain','3','11'],
+      ['Italy','3','','Italy','3','0'],
+      ['Belgium','1.7','','Belgium','4.3','155'],
+      ['Ireland','2','','Ireland','3.3','67'],
+      ['Switzerland','1.7','','Switzerland','3.3','96'],
+      ['Poland','1.3','','Poland','3.3','156'],
+      ['Denmark','1','','Denmark','3','200'],
+      ['Sweden','1','','Sweden','2.7','167'],
+      ['Czech Rep.','1','','Czech Rep.','2.3','133'],
+      ['Austria','0.3','','Austria','1.3','344'],
+      ['Norway','0.3','','Norway','2','567'],
+    ],
+    'TOUR LEVELS': [
+      ['','2025','2026'],
+      ['Level 1','25.64','23.21'],
+      ['Level 2','41.03','46.43'],
+      ['Level 3','33.33','30.36'],
+    ],
+    'OFFER FREQUENCY': [
+      ['Offer','%','','Offer','%'],
+      ['Platinum','74','','Platinum','72'],
+      ['VIP Packages','0','','VIP Packages','38'],
+      ['AAA Tour','5','','AAA Tour','24'],
+      ['D2C Presale','6','','TM Request','14'],
+      ['Artist Sign-Up','2','','Artist Sign-Up','3'],
+      ['No Offer','19','','No Offer','7'],
+    ],
+    'QUALITY': [
+      ['Market','Tours Feb-Mar 2026','Errors','Errors per tour'],
+      ['Czech Rep.','2','5','2.5'],
+      ['Austria','4','7','1.75'],
+      ['Italy','5','5','1'],
+      ['Poland','4','3','0.75'],
+      ['Switzerland','7','5','0.71'],
+      ['Belgium','6','4','0.67'],
+      ['UK','14','9','0.64'],
+      ['Netherlands','14','8','0.57'],
+      ['Germany','13','7','0.54'],
+      ['Denmark','4','2','0.5'],
+      ['Sweden','4','2','0.5'],
+      ['Norway','4','2','0.5'],
+      ['France','12','5','0.42'],
+      ['Ireland','6','1','0.17'],
+      ['Spain','4','0','0'],
+    ],
+    'ERROR TYPES': [
+      ['Error Type','Count'],
+      ['Early image ≤30m','31'],
+      ['Early image >30m','16'],
+      ['Improper image','8'],
+      ['Incorrect/Delayed','5'],
+      ['Incorrect EDP','2'],
+      ['Late/no socials','2'],
+      ['Late about copy','1'],
+    ],
+    'MAR 2026': [
+      ['Tour Level','','Offers',''],
+      ['Level 1','2','Platinum','10'],
+      ['Level 2','5','No offer','2'],
+      ['Level 3','7','VIP','5'],
+      ['','','AAA Tour','2'],
+      ['','','ASU','1'],
+    ],
+    'MMR REP ENGAGEMENT': [
+      ['Market','Call Attendance','Slack Channel Comment / Reply'],
+      ['UK','1','2'],
+      ['Belgium','1','2'],
+      ['Czech Republic','1','0'],
+      ['Denmark','1','7'],
+      ['Finland','0','0'],
+      ['France','1','0'],
+      ['Germany + Austria','1','10'],
+      ['Greece & Cyprus','0','0'],
+      ['Ireland','1','2'],
+      ['Israel','0','0'],
+      ['Italy','0','4'],
+      ['Netherlands','1','14'],
+      ['Norway','1','0'],
+      ['Poland','1','5'],
+      ['South Africa','0','0'],
+      ['Spain','1','5'],
+      ['Sweden','0','0'],
+      ['Switzerland','1','3'],
+      ['Turkey','0','0'],
+      ['UAE + Saudi Arabia','0','0'],
+      ['Uganda + Kenya','0','0'],
+    ],
+  };
+}
+
+loadAndBuild();
+
+// ── MMR INSIGHTS ─────────────────────────────────────────────
+
+// Market rep → market mapping (excludes central team: Samar, Daniel, Lizz)
+const REP_MARKET = {
+  'Tu Vi Nguyen Truong':'Netherlands','Joris Timmerman':'Netherlands','Robin van der Heijden':'Netherlands',
+  'Niklas Kaulbersch':'Germany',
+  'Julie Valdersdorf Jensen':'Denmark','Trine Lysholt':'Denmark','Stine Rysgaard Jensen':'Denmark',
+  'Jason Wan':'Ireland','Lorraine Boshell':'Ireland',
+  'Marco Caspani':'Italy','Gianluca Magli':'Italy',
+  'Reyes Saenz de Juano':'Spain','Nuria Verano':'Spain',
+  'Elise Camu':'France',
+  'Kellin Dalcher':'Switzerland',
+  'Julita Żukowska':'Poland','Weronika Kłosowska':'Poland','Magda Jędrzejewska':'Poland',
+  'Marisanna Steen Danielsson':'Norway',
+  'Wilgot Linge':'Sweden',
+  'Riitta Peitsala':'Finland','Marika Lapinleimu':'Finland',
+  'Inva Naso':'Greece',
+  'Shira Aizner Gluska':'Israel',
+  'Tanisha Kotak':'UAE',
+  'Semiray Karakoc':'Turkey',
+  'Seth Decoene':'Belgium','Ghita Belarabi':'Belgium','Layla Zaya Mendez':'Belgium',
+  'Eliška Šedivá':'Czech Republic',
+  'James Page':'UK','Matt Neocleous':'UK',
+};
+
+const CENTRAL_TEAM = ['Samar Khan','Daniel Kelly','Lizz Posen'];
+
+const SLACK_MESSAGES = `
+Tu Vi Nguyen Truong [NL, 2026-05-15]: Hi! Are there any updates about the announce of Kehlani planned upcoming Monday (18 May)?
+Kellin Dalcher [CH, 2026-05-13]: Hi Samar not sure if that's possible but would it be an option to work on the option that we would be able to schedule images appearing at the right time? Or is this something that wouldn't be technically possible at all?
+Julie Valdersdorf Jensen [DK, 2026-05-13]: I have some feedback on the process regarding changing the attraction image. In Denmark, the Client Support team is responsible for changing the attraction image prior to the announcement. The challenge here is that the system can take a long time to update, so if we wait until the time of the announcement to change the image, it might not go live until 20 minutes later. On the other hand, we break the embargo if we change the image 20 minutes before the announcement. In those cases, what do you prefer? Would it be a better idea for TM Music to change the attraction image for all relevant markets so we avoid confusion and breaking the embargo?
+Jason Wan [IE, 2026-05-13]: Hi all, we just received this social copy from our local promoter for KATSEYE. Didn't see any mention of social copy in the brief, but just double checking that there isn't any approved copy for TM that we need to follow.
+Niklas Kaulbersch [DE, 2026-05-13]: Hi everyone, as we all have to deal with local resource adjustments, I'd like to raise a few questions and ideas around improving global support for medium and smaller markets. Could the ADP/EDP image in TM1 Objects be uploaded centrally for all markets instead of locally at announcement time? Could the larger markets share a blog copy ahead of the announcement so smaller markets can translate and prepare content in time? Could homepage/website spotlight images also be uploaded centrally?
+Joris Timmerman [NL, 2026-05-05]: Same for Daniel Caesar?
+Julie Valdersdorf Jensen [DK, 2026-05-05]: Hi! Is there any news on Bryson Tiller?
+Tu Vi Nguyen Truong [NL, 2026-04-30]: Hi! Is there a new image available for Grace Ives? Or can we use this one
+Niklas Kaulbersch [DE, 2026-04-30]: Hey for Dollhouse we received a different local announcement timing: 14:15h CET and the info we should wait for the artist to announce - is this again only referring to Socials?
+James Page [UK, 2026-04-24]: Morning all, pleasure to be a part of the team! Could I ask if we know how many sign ups we got for Karol G in the UK?
+Magda Jedrzejewska [PL, 2026-04-24]: Hi guys, do I remember correctly that there was a request about a post for Foo Fighters' new album? Are there any social assets available?
+Magda Jedrzejewska [PL, 2026-04-24]: Or is it okay if we prepare them locally?
+Reyes Saenz de Juano [ES, 2026-04-23]: Morning, could you please update ASU counts?
+Joris Timmerman [NL, 2026-04-21]: Question from LN: Is it possible to have the promoter opt-in automatically pre-selected? Just like the Universal/artist opt-in?
+Joris Timmerman [NL, 2026-04-21]: When I switch VPN off, London, Amsterdam and Dusseldorf are the nearest shows.
+Niklas Kaulbersch [DE, 2026-04-21]: Not sure where to flag this but with several devices in Berlin we see London and Chicago as nearest events on the ASU page, not e.g. Düsseldorf, Warsaw and Amsterdam.
+Nuria Verano [ES, 2026-04-22]: Hi! On the ASU page for the spanish market, the last FAQ is incorrect, as this option isn't available in our market. Could you please ask them to remove it?
+Reyes Saenz de Juano [ES, 2026-04-22]: Morning! Can we have please Karol G ASU campaign current counts per country?
+Magda Jedrzejewska [PL, 2026-04-13]: Hi all! Would it be possible please to add information about venues to the pipeline e-mail - if you don't have details, maybe just info if it's a club/arena/stadium? I think it would be super helpful for planning activities for many markets.
+Julie Valdersdorf Jensen [DK, 2026-04-10]: According to the latest pipeline, Melanie Martinez and Beabadoobee are set to be announced next week. I just wanted to double-check that the venues for the Danish concerts are TM-ticketed venues?
+Niklas Kaulbersch [DE, 2026-04-09]: Hey - do we have an English approved bio for Xdinary Heroes we could use for the English page and translate for the local language? Unfortunately our local LN team can't provide it.
+Joris Timmerman [NL, 2026-04-09]: Hey! Will Thirty Seconds to Mars be a TM Music tour? And if so, is marketing required? I can see a Confluence page, but we haven't received anything from you yet. Announce should be tomorrow at 10am.
+Jason Wan [IE, 2026-04-07]: Hi, we have a local promoter who is doing their own marketing activity for Celine Dion. They've included us in an email for an announcement of 6 extra show dates at 1pm Irish time. Just double checking if there will be any further activity from our end?
+Joris Timmerman [NL, 2026-03-30]: I can see in the Canva creative deck that we also have to post on TikTok for Celine. What sound can we use for this?
+Julie Valdersdorf Jensen [DK, 2026-03-30]: Just a quick question regarding the assets for Céline Dion. Is it the intention that we should not translate "Ticket Details" in the top right corner? The box is currently locked.
+Joris Timmerman [NL, 2026-03-19]: Hi. In the Canva briefing for Shakira, it says the show dates slide should be featured twice in the first X post. Think this should be a different one?
+Julie Valdersdorf Jensen [DK, 2026-03-19]: We are currently translating the newsletter for the Shakira artist sign-up, but I've noticed that the copy doesn't clearly state that the event is taking place in Spain. So I just wanted to let you know that we'll be adding that information to the text.
+Layla Zaya Mendez [BE, 2026-03-19]: Hi same thing for FB, slide 2 and 7 are the same.
+Gianluca Magli [IT, 2026-03-19]: Hi guys, just to check, can you confirm that ASU for Shakira is open until 22:00 on Sunday? In the template, in the Pre-Headline Text I see "Sign up before 21:00", while in the Body Copy "Sign up before 22:00".
+Joris Timmerman [NL, 2026-03-16]: Morning! We are not able to do social posts for both Stephen Wilson Jr. and Metric today. Do you have any preference over the two which we should promote on our channels?
+Joris Timmerman [NL, 2026-03-13]: Hey! I see two extra TM Music announces were just added for next week in our market. We're already fully booked for Weekly Alert spots for that week. Should we give priority based on tour level?
+Jason Wan [IE, 2026-03-16]: Hi all, just checking if there's specific copy we need to use for the VIP info on the Metric EADP?
+Marco Caspani [IT, 2026-04-21]: While on the first FAQ in the Gdoc, I guess there's a mistake "After kicking off in Italy, Karol G will tour across Europe..." since in the routing now Spain is the first show.
+Marco Caspani [IT, 2026-04-21]: Do you have the link we should point to for the sign-ups in Italy?
+`;
+
+// Count messages per market rep (for participation chart)
+const MARKET_MSG_COUNT = {};
+SLACK_MESSAGES.split('\n').forEach(line => {
+  const match = line.match(/^(.+?)\s*\[/);
+  if (!match) return;
+  const name = match[1].trim();
+  const market = REP_MARKET[name];
+  if (!market) return;
+  MARKET_MSG_COUNT[market] = (MARKET_MSG_COUNT[market] || 0) + 1;
+});
+
+// All markets for "least engaged" display
+const ALL_MARKETS = [...new Set(Object.values(REP_MARKET))];
+const INACTIVE_MARKETS = ALL_MARKETS.filter(m => !MARKET_MSG_COUNT[m]);
+
+async function loadInsights() {
+  try {
+    const prompt = `You are analysing messages from a private Slack channel called #music-marketing-reps, used by Music Marketing Reps across EMEA markets at Ticketmaster. The central team (Samar Khan, Daniel Kelly, Lizz Posen) manage the channel.
+
+Here are the market rep messages (central team excluded):
+
+${SLACK_MESSAGES}
+
+Please analyse these messages and return ONLY a valid JSON object (no markdown, no explanation) with this exact structure:
+{
+  "themes": [
+    {"name": "Theme name", "description": "1-2 sentence description of the theme", "markets": ["Market1","Market2"], "frequency": 1-10, "trend": "growing|stable|fading"}
+  ],
+  "sentiment": [
+    {"market": "Market name", "sentiment": "positive|neutral|frustrated", "note": "brief reason"}
+  ],
+  "unresolved": [
+    {"market": "Market name", "issue": "Brief description of unresolved question or issue", "date": "YYYY-MM-DD"}
+  ],
+  "recommendations": [
+    {"title": "Recommendation title", "detail": "1-2 sentence actionable recommendation for the central team"}
+  ],
+  "summary": "2-3 sentence executive summary of the channel's current state"
+}
+
+Rules:
+- themes: identify 4-6 broad strategic themes (NOT specific tour requests). Focus on process issues, resource challenges, centralisation needs, communication gaps.
+- frequency: score 1-10 based on how often the theme appears
+- sentiment: only include markets that have sent messages. Be fair and nuanced.
+- unresolved: only genuine unanswered strategic questions, not tour-specific admin
+- recommendations: provide 3-4 concrete strategic recommendations for the central team
+- Return ONLY the JSON object, nothing else.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content.find(b => b.type === 'text')?.text || '{}';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const insights = JSON.parse(clean);
+
+    renderInsights(insights);
+  } catch(e) {
+    console.error('Insights error:', e);
+    document.getElementById('insights-kpis').innerHTML = `<div class="mv" style="grid-column:1/-1"><div class="ml">Status</div><div class="mn" style="font-size:14px;margin-top:4px;">Analysis unavailable</div><div class="ms">${e.message}</div></div>`;
+  }
+}
+
+function renderInsights(d) {
+  // KPIs
+  const topMarket = Object.entries(MARKET_MSG_COUNT).sort((a,b)=>b[1]-a[1])[0]||['—',0];
+  const leastCount = INACTIVE_MARKETS.length;
+  document.getElementById('insights-kpis').innerHTML = `
+    <div class="mv"><div class="ml">Themes identified</div><div class="mn">${(d.themes||[]).length}</div><div class="ms">strategic recurring topics</div></div>
+    <div class="mv"><div class="ml">Most active market</div><div class="mn" style="font-size:18px;margin-top:4px;">${topMarket[0]}</div><div class="badge bg">${topMarket[1]} messages</div></div>
+    <div class="mv"><div class="ml">Silent markets</div><div class="mn">${leastCount}</div><div class="ms">no messages yet</div><div class="badge br">needs attention</div></div>
+    <div class="mv"><div class="ml">Unresolved issues</div><div class="mn">${(d.unresolved||[]).length}</div><div class="ms">open questions</div><div class="badge ba">follow up needed</div></div>
+  `;
+
+  // Themes
+  const tc = document.getElementById('themes-container');
+  if (d.themes && d.themes.length) {
+    const trendIcon = t => t==='growing'?'↑':t==='fading'?'↓':'→';
+    const trendCls = t => t==='growing'?'bg':t==='fading'?'br':'bi';
+    tc.innerHTML = d.themes.map(t => `
+      <div style="border:1px solid #e8e8e0;border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+          <div style="font-size:13px;font-weight:600;color:#1a1a18;">${t.name}</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:10px;">
+            <span class="badge ${trendCls(t.trend)}" style="margin-top:0">${trendIcon(t.trend)} ${t.trend}</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#555;margin-bottom:8px;">${t.description}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:6px;background:#e8e8e0;border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${t.frequency*10}%;background:#378ADD;border-radius:3px;"></div>
+          </div>
+          <div style="font-size:11px;color:#888;white-space:nowrap;">${t.frequency}/10</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#888;">Markets: ${(t.markets||[]).join(', ')}</div>
+      </div>
+    `).join('');
+  } else {
+    tc.innerHTML = '<div style="color:#888;font-size:13px;padding:16px">No themes identified yet.</div>';
+  }
+
+  // Participation chart
+  const partData = Object.entries(MARKET_MSG_COUNT).sort((a,b)=>b[1]-a[1]);
+  destroyChart('participation');
+  CHARTS.participation = new Chart(document.getElementById('c-participation'), {
+    type:'bar',
+    data:{labels:partData.map(d=>d[0]),datasets:[{data:partData.map(d=>d[1]),backgroundColor:'#378ADD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+
+  // Sentiment
+  const sc = document.getElementById('sentiment-container');
+  if (d.sentiment && d.sentiment.length) {
+    const sCls = s => s==='positive'?'bg':s==='frustrated'?'br':'bi';
+    const sIcon = s => s==='positive'?'😊':s==='frustrated'?'😟':'😐';
+    sc.innerHTML = `<table><thead><tr><th>Market</th><th>Tone</th><th>Note</th></tr></thead><tbody>` +
+      d.sentiment.map(s=>`<tr><td>${s.market}</td><td><span class="badge ${sCls(s.sentiment)}" style="margin-top:0">${sIcon(s.sentiment)} ${s.sentiment}</span></td><td style="font-size:12px;color:#666">${s.note}</td></tr>`).join('') +
+      `</tbody></table>`;
+  } else {
+    sc.innerHTML = '<div style="color:#888;font-size:13px;padding:16px">No sentiment data available.</div>';
+  }
+
+  // Unresolved
+  const uc = document.getElementById('unresolved-container');
+  if (d.unresolved && d.unresolved.length) {
+    uc.innerHTML = d.unresolved.map(u=>`
+      <div style="border-left:3px solid #E89B2A;padding:10px 14px;margin-bottom:10px;background:#fdfcf8;border-radius:0 6px 6px 0;">
+        <div style="font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:3px;">${u.market} <span style="font-weight:400;color:#888">· ${u.date}</span></div>
+        <div style="font-size:12px;color:#555;">${u.issue}</div>
+      </div>
+    `).join('');
+  } else {
+    uc.innerHTML = '<div style="color:#3b6d11;font-size:13px;padding:16px;">✓ No major unresolved threads identified.</div>';
+  }
+
+  // Recommendations
+  const rc = document.getElementById('recommendations-container');
+  if (d.recommendations && d.recommendations.length) {
+    rc.innerHTML = d.recommendations.map((r,i)=>`
+      <div style="display:flex;gap:14px;margin-bottom:14px;align-items:flex-start;">
+        <div style="width:26px;height:26px;border-radius:50%;background:#378ADD;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#1a1a18;margin-bottom:3px;">${r.title}</div>
+          <div style="font-size:12px;color:#555;">${r.detail}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    rc.innerHTML = '<div style="color:#888;font-size:13px;">No recommendations generated.</div>';
+  }
+
+  // Timestamp
+  document.getElementById('insights-timestamp').textContent =
+    `Last analysed: ${new Date().toLocaleString('en-GB', {dateStyle:'medium',timeStyle:'short'})}`;
+}
+
+// Load insights when Insights tab is first opened
+let insightsLoaded = false;
+document.querySelector('[onclick*="insights"]').addEventListener('click', () => {
+  if (!insightsLoaded) { insightsLoaded = true; loadInsights(); }
+});
+</script>
+</body>
+</html>
