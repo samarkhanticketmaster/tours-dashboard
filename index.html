@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tours Performance Dashboard</title>
+<title>EMEA Marketing Tour Intelligence Dashboard</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #f5f5f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #2c2c2a; min-height: 100vh; }
@@ -54,7 +54,7 @@ tr:last-child td { border-bottom: none; }
 <div class="header">
   <div>
     <div class="sub">Tours Intelligence · EMEA</div>
-    <h1>Performance Dashboard</h1>
+    <h1>EMEA Marketing Tour Intelligence Dashboard</h1>
   </div>
   <div class="meta">
     <span>YTD through Apr 2026</span>
@@ -323,41 +323,43 @@ const ENGAGEMENT = [
 
 const INSIGHTS = {
   themes: [
-    {name:'Centralised Image Management', description:'Multiple markets requesting that ADP/EDP images be uploaded centrally to avoid timing errors and embargo breaches.', markets:['Netherlands','Germany','Denmark','Switzerland'], frequency:9, trend:'growing'},
-    {name:'Resource Constraints in Smaller Markets', description:'Smaller markets flagging capacity issues and requesting more central support for blog copy, translations, and social assets.', markets:['Germany','Poland','Norway','Austria'], frequency:8, trend:'growing'},
-    {name:'Social Media Asset Clarity', description:'Markets raising questions about approved copy, TikTok usage rights, and Canva brief accuracy for social posts.', markets:['Ireland','Netherlands','Belgium','Denmark'], frequency:7, trend:'stable'},
-    {name:'ASU Campaign Coordination', description:'Several markets requesting real-time ASU counts, FAQ corrections, and clearer sign-up page localisation.', markets:['Spain','Netherlands','Germany','Italy'], frequency:7, trend:'stable'},
-    {name:'Pipeline Visibility', description:'Markets requesting more advance notice of upcoming announces including venue type and ticketing details.', markets:['Poland','Denmark','Ireland'], frequency:5, trend:'stable'},
-    {name:'Local Promoter Alignment', description:'Markets flagging misalignment between local promoter activity and central TM Music briefs.', markets:['Ireland','France'], frequency:4, trend:'fading'},
+    {name:'Centralised Image Management', description:'The most dominant theme — multiple markets requesting central ADP/EDP image uploads to avoid embargo breaches. Central team has acknowledged this and committed to communicating a solution within weeks.', markets:['Germany','Denmark','Switzerland','Netherlands'], frequency:10, trend:'growing'},
+    {name:'EADP About Copy & Editorial Support', description:'Markets are using press releases from local promoters as About copy, often received close to announce time. Central team actively exploring providing English + AI-translated copy via Prismic to streamline this.', markets:['Germany','Poland','Denmark','Netherlands'], frequency:8, trend:'growing'},
+    {name:'Announce Timing & Pipeline Visibility', description:'Markets frequently asking for advance confirmation of announce dates, push-back notifications, and venue type in pipeline emails to aid local planning.', markets:['Denmark','Netherlands','Poland','Ireland'], frequency:8, trend:'stable'},
+    {name:'ASU Campaign Coordination', description:'Markets raising FAQ errors, geo-targeting issues, ASU count requests, and sign-up URL confusion across multiple campaigns.', markets:['Spain','Netherlands','Germany','Italy'], frequency:7, trend:'stable'},
+    {name:'Social Asset Clarity', description:'Recurring questions about Canva brief accuracy, TikTok sound usage, approved copy for social posts, and which assets are mandatory vs optional.', markets:['Netherlands','Belgium','Ireland','Denmark'], frequency:6, trend:'stable'},
+    {name:'Local Promoter vs Central Brief Alignment', description:'Several markets flagging conflicting instructions between local promoters and central TM Music briefs, particularly around timing and marketing scope.', markets:['Ireland','Italy','Spain','Germany'], frequency:5, trend:'fading'},
   ],
   sentiment: [
-    {market:'Netherlands', sentiment:'positive', note:'Highly engaged, proactively raising process improvement ideas'},
-    {market:'Germany',     sentiment:'positive', note:'Constructive suggestions around centralisation and resource support'},
-    {market:'Denmark',     sentiment:'neutral',  note:'Practical questions, flagging process issues without frustration'},
-    {market:'Poland',      sentiment:'neutral',  note:'Asking for more support, tone remains collaborative'},
-    {market:'Ireland',     sentiment:'neutral',  note:'Clarification-focused, no strong negative sentiment'},
-    {market:'Spain',       sentiment:'positive', note:'Engaged on ASU campaigns, responsive and clear'},
-    {market:'Italy',       sentiment:'neutral',  note:'Occasional questions, limited broader engagement'},
-    {market:'Belgium',     sentiment:'neutral',  note:'Active on social briefs, straightforward queries'},
-    {market:'Switzerland', sentiment:'frustrated', note:'Raising image timing issues repeatedly without resolution'},
+    {market:'Netherlands', sentiment:'positive', note:'Most active market — proactively raising process improvements and quick to flag issues constructively'},
+    {market:'Germany',     sentiment:'positive', note:'Highly constructive, detailed suggestions around centralisation with a collaborative tone'},
+    {market:'Denmark',     sentiment:'neutral',  note:'Consistently engaged, raises practical concerns clearly and professionally'},
+    {market:'Poland',      sentiment:'positive', note:'Collaborative and helpful — requesting process improvements to support local team efficiency'},
+    {market:'Ireland',     sentiment:'neutral',  note:'Steady contributor, clarification-focused with no strong negative sentiment'},
+    {market:'Spain',       sentiment:'neutral',  note:'Engaged on ASU and campaign queries, straightforward and responsive'},
+    {market:'Italy',       sentiment:'neutral',  note:'Selectively engaged, raises specific campaign issues without broader strategic input'},
+    {market:'Belgium',     sentiment:'neutral',  note:'Active on social briefs and Canva queries, tone is positive and collaborative'},
+    {market:'Switzerland', sentiment:'frustrated', note:'Image scheduling request raised but received no technical resolution — may need direct follow-up'},
+    {market:'UK',          sentiment:'positive', note:'New rep James Page onboarded positively, early engagement is encouraging'},
   ],
   unresolved: [
-    {market:'Switzerland', issue:'Request for scheduled image upload functionality to avoid embargo breaches — no technical response provided', date:'2026-05-13'},
-    {market:'Denmark',     issue:'Centralised image changing process — question about preferred workflow still open', date:'2026-05-13'},
-    {market:'Germany',     issue:'Central upload of ADP/EDP images and shared blog copy for smaller markets — no formal response', date:'2026-05-13'},
-    {market:'Poland',      issue:'Venue information in pipeline emails — request acknowledged but not actioned', date:'2026-04-13'},
+    {market:'Switzerland', issue:'Request for ability to schedule image uploads at announce time — no technical feasibility response provided yet', date:'2026-05-13'},
+    {market:'Germany',     issue:'Formal response on centralised ADP/EDP upload process and shared blog copy still pending — acknowledged but not resolved', date:'2026-05-13'},
+    {market:'Netherlands', issue:'Promoter opt-in auto pre-selection on ASU page — flagged to product team but no update shared back to market', date:'2026-04-21'},
+    {market:'Poland',      issue:'Request to add event programming team email to ADP distribution list — no confirmation of action', date:'2026-04-01'},
+    {market:'Germany',     issue:'Editorial copy request for Gracie Abrams announce — Samar checking, resolution pending', date:'2026-05-27'},
   ],
   recommendations: [
-    {title:'Establish a Centralised Image Upload Process', detail:'Multiple markets are struggling with image timing and embargo management. A centralised workflow where TM Music uploads ADP/EDP images ahead of announce would reduce errors significantly across all markets.'},
-    {title:'Create a Smaller Market Support Package', detail:'Germany, Poland, Norway and Austria are flagging resource gaps. A templated blog copy + social asset pack shared 48hrs before announce would reduce the burden on under-resourced markets.'},
-    {title:'Improve ASU Page Localisation', detail:'Spain and Netherlands have flagged FAQ inaccuracies and geo-targeting issues on ASU pages. A pre-launch QA checklist per market would catch these before they go live.'},
-    {title:'Increase Pipeline Transparency', detail:'Markets want more advance notice with venue type included. Even a simple "arena/club/stadium" tag in the pipeline email would help markets plan activity more effectively.'},
+    {title:'Formalise the Centralised Image Upload Commitment', detail:'The central team has verbally committed to centralising ADP/EDP image uploads — this should be formalised with a timeline shared at tomorrow\'s Monthly Forum to address Switzerland, Germany and Denmark\'s outstanding concerns.'},
+    {title:'Launch the Prismic AI-Translated Copy Initiative', detail:'The poll on EADP About copy process has strong engagement from 7 markets. Move quickly to formalise this — providing English + AI-translated copy via Prismic would directly address the resource gap flagged by Germany, Poland and smaller markets.'},
+    {title:'Add Venue Type to Weekly Pipeline Emails', detail:'Poland and Denmark have both requested venue type context in pipeline emails. A simple "arena/club/stadium" tag is low effort but high value for market planning.'},
+    {title:'Follow Up with Silent Markets Before Forum', detail:'Several markets (Finland, Sweden, Norway, Austria, Turkey, UAE, Israel) have had zero engagement on the channel. The Monthly Forum tomorrow is a good opportunity to draw them in — consider a direct outreach ahead of the call.'},
   ],
 };
 
 const MARKET_MSG_COUNT = {
-  'Netherlands':5, 'Germany':3, 'Denmark':3, 'Poland':2,
-  'Spain':2, 'Italy':2, 'Ireland':2, 'Belgium':1, 'Switzerland':1,
+  'Netherlands':7, 'Germany':6, 'Denmark':6, 'Poland':3,
+  'Spain':3, 'Italy':3, 'Ireland':3, 'Belgium':2, 'Switzerland':2, 'UK':2, 'Finland':1,
 };
 
 // ── Helpers ───────────────────────────────────────────────────
