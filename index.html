@@ -55,7 +55,7 @@ tr:last-child td { border-bottom: none; }
   <div>
     <div class="sub">Tours Intelligence · EMEA</div>
     <h1>EMEA Marketing Tour Intelligence Dashboard</h1>
-  </div>
+    </div>
   <div class="meta">
     <span>YTD through Apr 2026</span>
     <strong>15 Markets</strong>
@@ -67,7 +67,7 @@ tr:last-child td { border-bottom: none; }
   <button class="tn" onclick="switchTab(this,'markets')">Markets</button>
   <button class="tn" onclick="switchTab(this,'products')">Products</button>
   <button class="tn" onclick="switchTab(this,'quality')">Quality</button>
-  <button class="tn" onclick="switchTab(this,'engagement')">Engagement</button>
+  <button class="tn" onclick="switchTab(this,'engagement')">MMR Engagement</button>
   <button class="tn" onclick="switchTab(this,'insights')">MMR Insights ✦</button>
 </div>
 
@@ -75,6 +75,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- OVERVIEW -->
   <div id="tp-overview" class="tp on">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">A snapshot of tour volume, growth and key highlights across EMEA.</p>
     <div class="mc">
       <div class="mv"><div class="ml">YTD 2026 Tours</div><div class="mn">195</div><div class="ms">across 15 markets</div></div>
       <div class="mv"><div class="ml">Mar 2026 Tours</div><div class="mn">14</div><div class="badge bg">Record month</div></div>
@@ -106,6 +107,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- MARKETS -->
   <div id="tp-markets" class="tp">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">Tour activity and year-on-year growth broken down by market.</p>
     <div class="g2">
       <div class="card" style="margin-bottom:0;">
         <div class="ct">Tours YTD 2026 by market</div>
@@ -133,6 +135,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- PRODUCTS -->
   <div id="tp-products" class="tp">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">Offer mix and tour level trends across 2025 and 2026.</p>
     <div class="card">
       <div class="ct">Offer frequency — 2025 vs 2026 YTD</div>
       <div class="cd">% of tours that included each offer type</div>
@@ -181,6 +184,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- QUALITY -->
   <div id="tp-quality" class="tp">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">Announcement errors by market and type.</p>
     <div class="g2">
       <div class="card" style="margin-bottom:0;">
         <div class="ct">Errors per tour — Feb/Mar 2026</div>
@@ -200,7 +204,7 @@ tr:last-child td { border-bottom: none; }
           <div style="position:relative;width:100%;height:300px;"><canvas id="c-errtypes"></canvas></div>
         </div>
         <div class="card">
-          <div class="ct">Market quality table</div>
+          <div class="ct">Announcement accuracy by market</div>
           <table><thead><tr><th>Market</th><th class="r">Tours</th><th class="r">Errors</th><th class="r">Rate</th><th class="r">Rating</th></tr></thead><tbody id="quality-table"></tbody></table>
         </div>
       </div>
@@ -209,6 +213,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- ENGAGEMENT -->
   <div id="tp-engagement" class="tp">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">Call attendance and Slack activity across the MMR network.</p>
     <div class="mc">
       <div class="mv"><div class="ml">Markets on call</div><div class="mn">12</div><div class="ms">of 21 markets</div></div>
       <div class="mv"><div class="ml">Total Slack activity</div><div class="mn">59</div><div class="ms">comments &amp; replies</div></div>
@@ -237,6 +242,7 @@ tr:last-child td { border-bottom: none; }
 
   <!-- MMR INSIGHTS -->
   <div id="tp-insights" class="tp">
+    <p style="font-size:13px;color:#888;margin-bottom:20px;">Themes, sentiment and strategic recommendations based on the MMR Slack channel.</p>
     <div class="mc" id="insights-kpis"></div>
     <div class="g2">
       <div class="card" style="margin-bottom:0">
