@@ -278,11 +278,13 @@ function parseCSV(text){
   return rows;
 }
 
-// Normalise offer labels — ASU and Artist Sign-Up are the same
+// Normalise offer labels — ASU and all Artist Sign-Up variants are the same
 function normaliseOffer(o){
   const t = o.trim();
   if(!t) return '';
-  if(/^asu$/i.test(t) || /artist\s*sign[\s-]*up/i.test(t)) return 'Artist Sign-Up';
+  // strip to letters only for matching: catches "Artist-Sign Up", "Artist Sign-Up", "artist signup" etc.
+  const bare = t.toLowerCase().replace(/[^a-z]/g,'');
+  if(bare === 'asu' || bare === 'artistsignup' || bare === 'artistsignedup') return 'Artist Sign-Up';
   return t;
 }
 
