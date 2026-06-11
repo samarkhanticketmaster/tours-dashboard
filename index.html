@@ -61,7 +61,7 @@ tr:last-child td { border-bottom: none; }
     <h1>EMEA Marketing Tour Intelligence Dashboard</h1>
   </div>
   <div class="meta">
-    <span>YTD through Jun 2026</span>
+    <span id="live-status">Loading live data…</span>
     <strong>15 Markets</strong>
   </div>
 </div>
@@ -254,89 +254,134 @@ const BF = {family:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',size
 const TC = '#666', GC = 'rgba(0,0,0,0.06)';
 const CHARTS = {};
 
-// ── RAW DATA — sourced entirely from CSV sheet ────────────────
-const RAW_TOURS = [
-  {name:"A$AP Rocky 2026 Tour",markets:["UK","Germany","Netherlands","France"],month:"Jan-26",level:2,offers:["Platinum"]},
-  {name:"Bruno Mars 2026 UK+EU Tour",markets:["Netherlands","Spain","Germany","UK","France","Italy"],month:"Jan-26",level:1,offers:["Platinum","Artist Sign-Up","AAA Tour"]},
-  {name:"BTS UK+EU 2026",markets:["UK","France","Spain","Germany","Belgium"],month:"Jan-26",level:1,offers:["Platinum","AAA Tour"]},
-  {name:"Harry Styles UK+NL 2026",markets:["Netherlands","Germany","France","UK"],month:"Jan-26",level:1,offers:["Platinum","AAA Tour"]},
-  {name:"Madison Beer - 2026 Tour",markets:["Austria","Belgium","Czech Republic","Germany","Netherlands","Poland","Spain","UK","France"],month:"Jan-26",level:2,offers:["Platinum"]},
-  {name:"NE-YO & AKON - 2026 Tour",markets:["Belgium","Czech Republic","Denmark","France","Germany","Netherlands","Ireland","Norway","Poland","Sweden","UK"],month:"Jan-26",level:1,offers:["Platinum","VIP"]},
-  {name:"Baby Keem - 2026 Tour",markets:["France","Germany","Netherlands","UK","Switzerland"],month:"Feb-26",level:3,offers:["Platinum","VIP"]},
-  {name:"Harry Styles ONO 2026",markets:["UK"],month:"Feb-26",level:1,offers:["TM Request","AAA Tour"]},
-  {name:"Hilary Duff - 2026 Tour",markets:["UK","Ireland"],month:"Feb-26",level:2,offers:["Artist Sign-Up"]},
-  {name:"J. Cole 2026 Tour",markets:["UK","Ireland","Sweden","Denmark","Norway","Germany","Poland","Netherlands","Switzerland","France","Belgium","South Africa"],month:"Feb-26",level:1,offers:["Platinum","VIP"]},
-  {name:"Joji 2026 Tour",markets:["Belgium","Denmark","France","Germany","Netherlands","Ireland","Italy","Poland","Spain","UK"],month:"Feb-26",level:2,offers:["Platinum","Artist Sign-Up"]},
-  {name:"NAV 2026 Tour",markets:["France","Germany","Netherlands","UK"],month:"Feb-26",level:3,offers:["Platinum","VIP"]},
-  {name:"PinkPantheress - UK/EU 2026",markets:["UK","France","Netherlands","Germany"],month:"Feb-26",level:3,offers:["VIP"]},
-  {name:"RUSH - 2026 Tour",markets:["Denmark","Finland","Germany","Norway","Sweden","UK","France","Netherlands","Switzerland"],month:"Feb-26",level:2,offers:["VIP"]},
-  {name:"The Kid LAROI - 2026 Tour",markets:["France","Belgium","Germany","Netherlands","Italy","UK","Switzerland"],month:"Feb-26",level:2,offers:["Platinum"]},
-  {name:"Arlo Parks - EU/UK 2026",markets:["Ireland","UK","Netherlands","Germany","Belgium","France","Spain","Poland","Austria","Czech Republic","Switzerland","Denmark","Norway","Sweden"],month:"Mar-26",level:2,offers:["Platinum"]},
-  {name:"Bailey Zimmerman UK+EU 2026",markets:["Germany","Netherlands","Ireland","UK","Norway","Sweden"],month:"Mar-26",level:3,offers:["Platinum","VIP"]},
-  {name:"CA7RIEL & PACO AMOROSO 2026",markets:["UK","Belgium","France","Germany","Netherlands","Italy","Spain","Switzerland","Austria"],month:"Mar-26",level:3,offers:["Platinum"]},
-  {name:"Jacob Collier 2026 Tour",markets:["Belgium","France","Germany","Netherlands","Poland","UK","Austria"],month:"Mar-26",level:3,offers:["Platinum","VIP"]},
-  {name:"Kodaline - 2026 Tour",markets:["Austria","Czech Republic","France","Germany","Netherlands","Italy","UK","Switzerland"],month:"Mar-26",level:2,offers:["Platinum"]},
-  {name:"Melanie Martinez - Listening Parties",markets:["Netherlands"],month:"Mar-26",level:3,offers:["No Offer"]},
-  {name:"Metric, Broken Social Scene, Stars",markets:["France","Germany","Netherlands","Ireland","UK"],month:"Mar-26",level:3,offers:["VIP","Platinum"]},
-  {name:"Niall Horan - 2026 Tour",markets:["UK","Germany","Denmark","Netherlands","Spain","Italy","Poland","Belgium","France","Ireland"],month:"Mar-26",level:2,offers:["No Offer"]},
-  {name:"Pitbull 2026 Tour",markets:["Czech Republic","Finland","Germany","Italy","Poland","Spain","Austria","France","Switzerland"],month:"Mar-26",level:2,offers:["Platinum","VIP"]},
-  {name:"Rawayana 2026 Tour",markets:["Spain","Italy","Switzerland","Germany","Netherlands","France","UK"],month:"Mar-26",level:3,offers:["Platinum","VIP"]},
-  {name:"Stephen Wilson Jr. - UK/EU 2026",markets:["Denmark","France","Germany","Netherlands","Norway","Sweden","UK"],month:"Mar-26",level:3,offers:["Platinum"]},
-  {name:"The Pussycat Dolls - 2026 Tour",markets:["Belgium","Czech Republic","Denmark","France","Germany","Netherlands","Ireland","Norway","Poland","UK"],month:"Mar-26",level:2,offers:["Platinum"]},
-  {name:"Shakira 2026 Tour",markets:["Spain"],month:"Mar-26",level:1,offers:["ASU","AAA Tour"]},
-  {name:"Celine Dion 2026 Tour",markets:["France"],month:"Mar-26",level:1,offers:["AAA Tour"]},
-  {name:"Xdinary Heroes - UK+EU 2026",markets:["UK","France","Germany","Italy"],month:"Apr-26",level:3,offers:["Imagery Only"]},
-  {name:"The Strokes 2026 Tour",markets:["UK","Germany","Netherlands","Italy","Spain","France","Ireland"],month:"Apr-26",level:2,offers:["Platinum"]},
-  {name:"Melanie Martinez 2026 Tour",markets:["Netherlands","UK","France","Italy","Denmark","Belgium","Poland","Czech Republic","Germany"],month:"Apr-26",level:2,offers:["Platinum"]},
-  {name:"Karol G 2026 Tour",markets:["Spain","France","UK","Netherlands","Poland","Germany","Italy"],month:"Apr-26",level:1,offers:["ASU"]},
-  {name:"aespa 2026 Tour",markets:["UK","Netherlands","Sweden","Denmark","Germany","Italy","Spain","France"],month:"Apr-26",level:2,offers:["Platinum"]},
-  {name:"Olivia Dean 2026 Tour",markets:["Sweden","Italy","Spain","Germany","France","UK","Netherlands"],month:"Apr-26",level:2,offers:["Platinum"]},
-  {name:"KATSEYE 2026 Tour",markets:["Ireland","UK","France","Netherlands","Germany","Belgium","Denmark"],month:"May-26",level:2,offers:["Platinum"]},
-  {name:"Daniel Caesar 2026 Tour",markets:["UK","Germany","Netherlands","France","Belgium"],month:"May-26",level:2,offers:["Platinum"]},
-  {name:"Good Charlotte 2026 Tour",markets:["UK","Germany","Netherlands","France","Belgium","Sweden"],month:"May-26",level:3,offers:["Platinum"]},
-  {name:"6LACK 2026 Tour",markets:["Norway","Sweden","Denmark","Poland","Germany","Switzerland","France","UK","Ireland"],month:"May-26",level:3,offers:["Platinum"]},
-  {name:"Gracie Abrams 2026 Tour",markets:["France","Belgium","Ireland","UK","Netherlands","Germany","Italy","Spain"],month:"May-26",level:1,offers:["Platinum"]},
-  {name:"Kehlani 2026 Tour",markets:["Germany","Belgium","France","Netherlands","UK"],month:"May-26",level:2,offers:["Platinum"]},
-  {name:"Bryson Tiller 2026 Tour",markets:["Switzerland","France","Denmark","Netherlands","Germany","Belgium","Ireland","UK"],month:"Jun-26",level:2,offers:["Platinum"]},
-  {name:"A$AP Rocky - Additional Dates",markets:["Poland","Czech Republic","Greece"],month:"Jun-26",level:2,offers:["Platinum","VIP"]},
-];
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?output=csv';
 
-// ── Computed metrics ─────────────────────────────────────────
+// ── Robust CSV parser (handles quoted multi-line fields) ──────
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i], next = text[i+1];
+    if(inQuotes){
+      if(ch === '"' && next === '"'){ field += '"'; i++; }
+      else if(ch === '"'){ inQuotes = false; }
+      else { field += ch; }
+    } else {
+      if(ch === '"'){ inQuotes = true; }
+      else if(ch === ','){ row.push(field); field = ''; }
+      else if(ch === '\r'){ /* skip */ }
+      else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += ch; }
+    }
+  }
+  if(field !== '' || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Normalise offer labels — ASU and Artist Sign-Up are the same
+function normaliseOffer(o){
+  const t = o.trim();
+  if(!t) return '';
+  if(/^asu$/i.test(t) || /artist\s*sign[\s-]*up/i.test(t)) return 'Artist Sign-Up';
+  return t;
+}
+
+// Split a multi-line cell into clean values (markets — line breaks)
+function splitLines(cell){
+  return (cell||'').split(/\n/).map(s=>s.trim()).filter(Boolean);
+}
+// Split a comma-separated cell into clean values (offers — commas)
+function splitCommas(cell){
+  return (cell||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+}
+
+// ── Build RAW_TOURS from CSV rows ─────────────────────────────
+function rowsToTours(rows){
+  if(!rows.length) return [];
+  const header = rows[0].map(h=>h.trim().toLowerCase());
+  const idx = {
+    tour: header.findIndex(h=>h==='tour'),
+    markets: header.findIndex(h=>h.includes('markets involved')),
+    month: header.findIndex(h=>h.includes('month')),
+    level: header.findIndex(h=>h.includes('asana marketing level')),
+    offers: header.findIndex(h=>h.includes('offer type')),
+  };
+  const tours = [];
+  for(let i=1;i<rows.length;i++){
+    const r = rows[i];
+    if(!r || !r[idx.tour] || !r[idx.tour].trim()) continue;
+    const lvlRaw = (r[idx.level]||'').replace(/[^0-9]/g,'');
+    tours.push({
+      name: r[idx.tour].trim(),
+      markets: splitLines(r[idx.markets]),
+      month: (r[idx.month]||'').trim(),
+      level: parseInt(lvlRaw)||0,
+      offers: splitCommas(r[idx.offers]).map(normaliseOffer).filter(Boolean),
+    });
+  }
+  return tours;
+}
+
+// ── Load and initialise ───────────────────────────────────────
+async function init(){
+  try {
+    const res = await fetch(CSV_URL);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    const tours = rowsToTours(rows);
+    if(!tours.length) throw new Error('No tour rows parsed');
+    buildAll(tours);
+    const meta = document.getElementById('live-status');
+    if(meta) meta.textContent = 'Live · updated '+new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
+  } catch(e){
+    console.error('Live data error:', e);
+    const meta = document.getElementById('live-status');
+    if(meta) meta.textContent = '⚠ Could not load live data: '+e.message;
+  }
+}
+
+// ── Compute metrics + build everything from tours ────────────
 const MONTHS = ["Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26"];
-const totalTours = RAW_TOURS.length;
 
-// Monthly counts
-const monthlyCounts = {};
-MONTHS.forEach(m => monthlyCounts[m] = 0);
-RAW_TOURS.forEach(t => { if(monthlyCounts[t.month]!==undefined) monthlyCounts[t.month]++; });
+function buildAll(RAW_TOURS){
+  const totalTours = RAW_TOURS.length;
 
-// Market counts
-const marketCounts = {};
-RAW_TOURS.forEach(t => t.markets.forEach(m => {
-  const mk = m.trim(); if(!mk) return;
-  marketCounts[mk] = (marketCounts[mk]||0) + 1;
-}));
+  // Monthly counts
+  const monthlyCounts = {};
+  MONTHS.forEach(m => monthlyCounts[m] = 0);
+  RAW_TOURS.forEach(t => { if(monthlyCounts[t.month]!==undefined) monthlyCounts[t.month]++; });
 
-// Level counts
-const levelCounts = {1:0,2:0,3:0};
-RAW_TOURS.forEach(t => { if(levelCounts[t.level]!==undefined) levelCounts[t.level]++; });
+  // Market counts
+  const marketCounts = {};
+  RAW_TOURS.forEach(t => t.markets.forEach(m => {
+    const mk = m.trim(); if(!mk) return;
+    marketCounts[mk] = (marketCounts[mk]||0) + 1;
+  }));
 
-// Offer counts
-const offerCounts = {};
-RAW_TOURS.forEach(t => t.offers.forEach(o => {
-  const ok = o.trim(); if(!ok) return;
-  offerCounts[ok] = (offerCounts[ok]||0) + 1;
-}));
+  // Level counts
+  const levelCounts = {1:0,2:0,3:0};
+  RAW_TOURS.forEach(t => { if(levelCounts[t.level]!==undefined) levelCounts[t.level]++; });
 
-// Market by month
-const marketByMonth = {};
-RAW_TOURS.forEach(t => t.markets.forEach(m => {
-  const mk = m.trim(); if(!mk) return;
-  if(!marketByMonth[mk]) marketByMonth[mk] = {};
-  marketByMonth[mk][t.month] = (marketByMonth[mk][t.month]||0) + 1;
-}));
+  // Offer counts
+  const offerCounts = {};
+  RAW_TOURS.forEach(t => t.offers.forEach(o => {
+    const ok = o.trim(); if(!ok) return;
+    offerCounts[ok] = (offerCounts[ok]||0) + 1;
+  }));
 
-// Quality data (from announcement issues screenshots — only source available)
+  // Market by month
+  const marketByMonth = {};
+  RAW_TOURS.forEach(t => t.markets.forEach(m => {
+    const mk = m.trim(); if(!mk) return;
+    if(!marketByMonth[mk]) marketByMonth[mk] = {};
+    marketByMonth[mk][t.month] = (marketByMonth[mk][t.month]||0) + 1;
+  }));
+
+  build(RAW_TOURS, {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth});
+}
+
+// ── Static reference data (quality, engagement, insights) ─────
 const QUALITY = [
   {c:'Czech Republic',tours2m:2,errors:5,errRate:2.50},
   {c:'Austria',tours2m:4,errors:7,errRate:1.75},
@@ -355,7 +400,6 @@ const QUALITY = [
   {c:'Spain',tours2m:4,errors:0,errRate:0.00},
 ];
 
-// Engagement data
 const ENGAGEMENT = [
   {m:'UK',call:1,slack:2},{m:'Belgium',call:1,slack:2},{m:'Czech Republic',call:1,slack:0},
   {m:'Denmark',call:1,slack:7},{m:'Finland',call:0,slack:0},{m:'France',call:1,slack:0},
@@ -367,7 +411,6 @@ const ENGAGEMENT = [
   {m:'UAE + Saudi Arabia',call:0,slack:0},{m:'Uganda + Kenya',call:0,slack:0},
 ];
 
-// Insights data
 const INSIGHTS = {
   themes:[
     {name:'Centralised Image Management',description:'Multiple markets requesting central ADP/EDP image uploads to avoid embargo breaches. Central team committed to a solution.',markets:['Germany','Denmark','Switzerland','Netherlands'],frequency:10,trend:'growing'},
@@ -416,7 +459,8 @@ function switchTab(btn,id){
 }
 
 // ── BUILD ─────────────────────────────────────────────────────
-function build(){
+function build(RAW_TOURS, M){
+  const {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth} = M;
 
   // Overview KPIs
   const topMarket = Object.entries(marketCounts).sort((a,b)=>b[1]-a[1])[0];
@@ -657,7 +701,7 @@ function build(){
     </div>`).join('');
 }
 
-build();
+init();
 </script>
 </body>
 </html>
