@@ -298,7 +298,18 @@ function splitCommas(cell){
 // ── Build RAW_TOURS from CSV rows ─────────────────────────────
 function rowsToTours(rows){
   if(!rows.length) return [];
-  const header = rows[0].map(h=>h.trim().toLowerCase());
+
+  // Find the header row by scanning for the row containing "Tour" and "Markets Involved"
+  let headerRowIdx = -1;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    const lc = rows[i].map(c=>(c||'').trim().toLowerCase());
+    if(lc.some(c=>c==='tour') && lc.some(c=>c.includes('markets involved'))){
+      headerRowIdx = i; break;
+    }
+  }
+  if(headerRowIdx === -1) return [];
+
+  const header = rows[headerRowIdx].map(h=>(h||'').trim().toLowerCase());
   const idx = {
     tour: header.findIndex(h=>h==='tour'),
     markets: header.findIndex(h=>h.includes('markets involved')),
@@ -306,10 +317,11 @@ function rowsToTours(rows){
     level: header.findIndex(h=>h.includes('asana marketing level')),
     offers: header.findIndex(h=>h.includes('offer type')),
   };
+
   const tours = [];
-  for(let i=1;i<rows.length;i++){
+  for(let i=headerRowIdx+1;i<rows.length;i++){
     const r = rows[i];
-    if(!r || !r[idx.tour] || !r[idx.tour].trim()) continue;
+    if(!r || idx.tour<0 || !r[idx.tour] || !r[idx.tour].trim()) continue;
     const lvlRaw = (r[idx.level]||'').replace(/[^0-9]/g,'');
     tours.push({
       name: r[idx.tour].trim(),
