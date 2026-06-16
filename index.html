@@ -57,8 +57,7 @@ tr:last-child td { border-bottom: none; }
 
 <div class="header">
   <div>
-    <div class="sub">Tours Intelligence · EMEA</div>
-    <h1>EMEA Marketing Tour Intelligence Dashboard</h1>
+    <div class="sub">Tours Intelligence · EMEA</div>    <h1>EMEA Marketing Tour Intelligence Dashboard</h1>
   </div>
   <div class="meta">
     <span id="live-status">Loading live data…</span>
@@ -427,40 +426,40 @@ const ENGAGEMENT = [
 
 const INSIGHTS = {
   themes:[
-    {name:'Centralised Image Management',description:'Multiple markets requesting central ADP/EDP image uploads to avoid embargo breaches. Central team committed to a solution.',markets:['Germany','Denmark','Switzerland','Netherlands'],frequency:10,trend:'growing'},
-    {name:'EADP About Copy & Editorial Support',description:'Markets using press releases from local promoters as About copy. Central team exploring English + AI-translated copy via Prismic.',markets:['Germany','Poland','Denmark','Netherlands'],frequency:8,trend:'growing'},
-    {name:'Announce Timing & Pipeline Visibility',description:'Markets asking for advance confirmation of announce dates and venue type in pipeline emails.',markets:['Denmark','Netherlands','Poland','Ireland'],frequency:8,trend:'stable'},
-    {name:'ASU Campaign Coordination',description:'Markets raising FAQ errors, geo-targeting issues, ASU count requests, and sign-up URL confusion.',markets:['Spain','Netherlands','Germany','Italy'],frequency:7,trend:'stable'},
-    {name:'Social Asset Clarity',description:'Recurring questions about Canva brief accuracy, TikTok sound usage, and mandatory vs optional assets.',markets:['Netherlands','Belgium','Ireland','Denmark'],frequency:6,trend:'stable'},
-    {name:'Local Promoter vs Central Brief Alignment',description:'Markets flagging conflicting instructions between local promoters and central TM Music briefs.',markets:['Ireland','Italy','Spain','Germany'],frequency:5,trend:'fading'},
+    {name:'Centralised TM1 Imagery — Now Live',description:'Following sustained feedback, the central team confirmed (29 May) they now manage TM1 imagery uploads for all centrally managed tours, including support acts. Discussion has shifted from requesting it to clarifying scope and resolving rollout glitches.',markets:['Germany','Denmark','Ireland','Netherlands'],frequency:10,trend:'growing'},
+    {name:'Approved Imagery & No Editing',description:'Leadership issued a firm reminder that Level 1 / AAA artists must only use approved, unedited photos after a non-approved, edited image was posted. A compliance theme markets must cascade locally.',markets:['UK','Belgium','Germany'],frequency:7,trend:'growing'},
+    {name:'No Third-Party Link-Outs',description:'Repeated instances of markets receiving promoter copy linking to external sign-up/artist sites (Muse, Masego). Central team consistently instructing not to link out from TM marketing channels.',markets:['Netherlands','Italy'],frequency:7,trend:'growing'},
+    {name:'Announce Timing & Pipeline Volatility',description:'High volume of postponements and pipeline changes (Don Toliver, Cameron Whitcomb, Chase Atlantic, Kehlani, Bryson Tiller). Markets frequently seeking confirmation of dates and clarity on multi-tour announce weeks.',markets:['Netherlands','Denmark','Belgium','Germany'],frequency:9,trend:'growing'},
+    {name:'EADP About Copy & Editorial Support',description:'Prismic + AI-translated copy initiative is progressing — poll responses gathered from 7 markets. Markets still requesting editorial copy close to announce (e.g. Gracie Abrams).',markets:['Germany','Poland','Denmark','Netherlands'],frequency:6,trend:'stable'},
+    {name:'Non-Centralised Tour Confusion',description:'Markets occasionally unsure why no brief is received — central team clarifying the distinction between centralised vs non-centralised (A&PR-flagged) tours and local responsibilities.',markets:['Belgium','Ireland'],frequency:5,trend:'stable'},
   ],
   sentiment:[
-    {market:'Netherlands',sentiment:'positive',note:'Most active — proactively raising process improvements'},
-    {market:'Germany',sentiment:'positive',note:'Highly constructive centralisation suggestions'},
-    {market:'Denmark',sentiment:'neutral',note:'Consistently engaged, practical concerns'},
-    {market:'Poland',sentiment:'positive',note:'Collaborative, requesting process improvements'},
-    {market:'Ireland',sentiment:'neutral',note:'Steady contributor, clarification-focused'},
-    {market:'Spain',sentiment:'neutral',note:'Engaged on ASU and campaign queries'},
-    {market:'Italy',sentiment:'neutral',note:'Selectively engaged on specific issues'},
-    {market:'Belgium',sentiment:'neutral',note:'Active on social briefs and Canva queries'},
-    {market:'Switzerland',sentiment:'frustrated',note:'Image scheduling request raised with no resolution'},
-    {market:'UK',sentiment:'positive',note:'New rep James Page onboarded positively'},
+    {market:'Netherlands',sentiment:'positive',note:'Most active — frequent constructive queries, responsive to guidance'},
+    {market:'Denmark',sentiment:'positive',note:'Highly engaged, drove the centralised imagery discussion to resolution'},
+    {market:'Germany',sentiment:'positive',note:'Constructive, detailed process suggestions; engaged on editorial copy'},
+    {market:'Ireland',sentiment:'positive',note:'Proactively flags data/process issues (affinity tool naming, TM1 quirks)'},
+    {market:'Belgium',sentiment:'neutral',note:'Clarification-focused, active on imagery and announce timing'},
+    {market:'Italy',sentiment:'neutral',note:'Specific campaign queries, presale and copy clarifications'},
+    {market:'Spain',sentiment:'neutral',note:'Engaged on ASU counts and FAQ corrections'},
+    {market:'UK',sentiment:'positive',note:'Two reps now active (James, Laura); engaged and collaborative'},
+    {market:'Switzerland',sentiment:'neutral',note:'Image scheduling concern now addressed by central imagery rollout'},
+    {market:'Poland',sentiment:'neutral',note:'Lighter activity recently; engaged on social assets earlier'},
   ],
   unresolved:[
-    {market:'Switzerland',issue:'Request for scheduled image uploads at announce time — no technical response',date:'2026-05-13'},
-    {market:'Germany',issue:'Centralised ADP/EDP upload and shared blog copy — acknowledged but not resolved',date:'2026-05-13'},
-    {market:'Netherlands',issue:'Promoter opt-in auto pre-selection on ASU page — no update shared back',date:'2026-04-21'},
-    {market:'Germany',issue:'Editorial copy for Gracie Abrams — Samar checking, pending',date:'2026-05-27'},
+    {market:'Netherlands',issue:'Cameron Whitcomb removed from pipeline — awaiting confirmation that Thu 18 June announce is cancelled',date:'2026-06-16'},
+    {market:'Netherlands',issue:'Muse promoter copy links to external Muse store — awaiting compliant alternative wording',date:'2026-06-12'},
+    {market:'Italy',issue:'Whether Artist Presale can be promoted on the EADP — question raised, awaiting confirmation',date:'2026-05-28'},
+    {market:'Ireland',issue:'TM1 images sometimes need multiple attempts to update — flagged as a recurring reliability issue',date:'2026-05-28'},
   ],
   recommendations:[
-    {title:'Formalise the Centralised Image Upload Commitment',detail:'Committed verbally — formalise with a timeline shared at the Monthly Forum to address Switzerland, Germany and Denmark.'},
-    {title:'Launch the Prismic AI-Translated Copy Initiative',detail:'Poll on EADP About copy has strong engagement. Move quickly — providing English + AI-translated copy via Prismic would directly address the resource gap.'},
-    {title:'Add Venue Type to Weekly Pipeline Emails',detail:'Poland and Denmark have both requested venue type context. A simple arena/club/stadium tag is low effort but high value.'},
-    {title:'Follow Up with Silent Markets',detail:'Finland, Sweden, Norway, Austria, Turkey, UAE, Israel have zero engagement. The Monthly Forum is a good opportunity to draw them in.'},
+    {title:'Communicate Imagery Rollout to the Wider TM Music Team',detail:'Denmark flagged that the central imagery change wasn\'t communicated beyond this channel, causing confusion on Bryson Tiller. Ensure the wider team and Client Support are formally briefed to avoid duplicate/missed updates.'},
+    {title:'Issue Clear Guidance on Third-Party Link-Outs',detail:'Multiple markets are receiving promoter copy with external links (Muse, Masego). A short written policy on not linking out from TM channels — with compliant alternatives — would pre-empt these repeated queries.'},
+    {title:'Stabilise TM1 Image Updating',detail:'Ireland and others report images needing multiple attempts and support-act images not updating. Now that uploads are centralised, prioritise the technical reliability of TM1 to deliver the intended benefit.'},
+    {title:'Help Markets Resource Multi-Tour Announce Weeks',detail:'Daniel proactively checked capacity for two Level 3 tours (Polyphia, Role Model) announcing the same week. Formalising a quick capacity check when multiple tours land together would help markets plan support.'},
   ],
 };
 
-const MARKET_MSG_COUNT = {Netherlands:7,Germany:6,Denmark:6,Poland:3,Spain:3,Italy:3,Ireland:3,Belgium:2,Switzerland:2,UK:2,Finland:1};
+const MARKET_MSG_COUNT = {Netherlands:8,Denmark:6,Germany:5,Ireland:4,Belgium:4,Italy:4,Spain:3,UK:3,Poland:2,Switzerland:1};
 
 // ── Helpers ───────────────────────────────────────────────────
 function errColor(v){if(v>1.5)return'#E24B4A';if(v>=0.7)return'#E89B2A';if(v>0)return'#1D9E75';return'#639922';}
