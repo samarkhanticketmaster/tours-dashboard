@@ -457,53 +457,53 @@ function buildAll(RAW_TOURS){
 // ── Accuracy data — three periods ────────────────────────────
 // Jan–Mar 2026
 const QUALITY_JM = [
-  {c:'Czech Republic', errors:5,  mfe:'N/A',                                              mfeCount:'1 of each'},
-  {c:'Austria',        errors:7,  mfe:'Early Image – beyond 30 mins',                    mfeCount:6},
-  {c:'Italy',          errors:5,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
-  {c:'Poland',         errors:3,  mfe:'Late about copy / no about module',               mfeCount:2},
-  {c:'Switzerland',    errors:5,  mfe:'Late (30 mins plus) / no socials',                mfeCount:2},
-  {c:'Belgium',        errors:4,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
-  {c:'UK',             errors:10, mfe:'Incorrect/Delayed image',                          mfeCount:3},
-  {c:'Netherlands',    errors:8,  mfe:'Improperly positioned image (head chopped off)',  mfeCount:2},
-  {c:'Germany',        errors:7,  mfe:'Early Image – beyond 30 mins',                    mfeCount:7},
-  {c:'Denmark',        errors:2,  mfe:'Early Image >30 mins & Incorrect EDP + search',   mfeCount:'1 each'},
-  {c:'Sweden',         errors:2,  mfe:'Incorrect EDP + search & Late (30 mins plus) / no socials', mfeCount:'1 each'},
-  {c:'Norway',         errors:2,  mfe:'Early Image >30 mins & Late about copy / no about module',  mfeCount:'1 each'},
-  {c:'France',         errors:5,  mfe:'Late (30 mins plus) / no socials',                mfeCount:3},
-  {c:'Ireland',        errors:1,  mfe:'Early Image – beyond 30 mins',                    mfeCount:1},
-  {c:'Spain',          errors:0,  mfe:'N/A',                                             mfeCount:0},
+  {c:'Czech Republic', errors:5,tours:2,  mfe:'N/A',                                              mfeCount:'1 of each'},
+  {c:'Austria',        errors:7,tours:4,  mfe:'Early Image – beyond 30 mins',                    mfeCount:6},
+  {c:'Italy',          errors:5,tours:5,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
+  {c:'Poland',         errors:3,tours:4,  mfe:'Late about copy / no about module',               mfeCount:2},
+  {c:'Switzerland',    errors:5,tours:7,  mfe:'Late (30 mins plus) / no socials',                mfeCount:2},
+  {c:'Belgium',        errors:4,tours:6,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
+  {c:'UK',             errors:10,tours:14, mfe:'Incorrect/Delayed image',                          mfeCount:3},
+  {c:'Netherlands',    errors:8,tours:14,  mfe:'Improperly positioned image (head chopped off)',  mfeCount:2},
+  {c:'Germany',        errors:7,tours:13,  mfe:'Early Image – beyond 30 mins',                    mfeCount:7},
+  {c:'Denmark',        errors:2,tours:4,  mfe:'Early Image >30 mins & Incorrect EDP + search',   mfeCount:'1 each'},
+  {c:'Sweden',         errors:2,tours:4,  mfe:'Incorrect EDP + search & Late (30 mins plus) / no socials', mfeCount:'1 each'},
+  {c:'Norway',         errors:2,tours:4,  mfe:'Early Image >30 mins & Late about copy / no about module',  mfeCount:'1 each'},
+  {c:'France',         errors:5,tours:12,  mfe:'Late (30 mins plus) / no socials',                mfeCount:3},
+  {c:'Ireland',        errors:1,tours:6,  mfe:'Early Image – beyond 30 mins',                    mfeCount:1},
+  {c:'Spain',          errors:0,tours:4,  mfe:'N/A',                                             mfeCount:0},
 ];
 
 // Apr–May 2026
 const QUALITY_AM = [
-  {c:'Czech Republic', errors:2, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Austria',        errors:0, mfe:'—',                                                mfeCount:0},
-  {c:'Italy',          errors:0, mfe:'N/A',                                              mfeCount:0},
-  {c:'Poland',         errors:2, mfe:'Late about copy / no about module',               mfeCount:2},
-  {c:'Switzerland',    errors:4, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Belgium',        errors:3, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'UK',             errors:1, mfe:'Early Image – within 30 mins',                    mfeCount:1},
-  {c:'Netherlands',    errors:1, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
-  {c:'Germany',        errors:3, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Denmark',        errors:1, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
-  {c:'Sweden',         errors:0, mfe:'N/A',                                              mfeCount:0},
-  {c:'Norway',         errors:1, mfe:'Incorrect/Delayed image',                          mfeCount:1},
-  {c:'France',         errors:1, mfe:'Late (30 mins plus) / no socials',                mfeCount:1},
-  {c:'Ireland',        errors:0, mfe:'N/A',                                              mfeCount:0},
-  {c:'Spain',          errors:0, mfe:'N/A',                                              mfeCount:0},
+  {c:'Czech Republic', errors:2,tours:1, mfe:'N/A',                                              mfeCount:'1 each'},
+  {c:'Austria',        errors:0,tours:0, mfe:'—',                                                mfeCount:0},
+  {c:'Italy',          errors:0,tours:2, mfe:'N/A',                                              mfeCount:0},
+  {c:'Poland',         errors:2,tours:2, mfe:'Late about copy / no about module',               mfeCount:2},
+  {c:'Switzerland',    errors:4,tours:1, mfe:'N/A',                                              mfeCount:'1 each'},
+  {c:'Belgium',        errors:3,tours:5, mfe:'N/A',                                              mfeCount:'1 each'},
+  {c:'UK',             errors:1,tours:7, mfe:'Early Image – within 30 mins',                    mfeCount:1},
+  {c:'Netherlands',    errors:1,tours:6, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
+  {c:'Germany',        errors:3,tours:7, mfe:'N/A',                                              mfeCount:'1 each'},
+  {c:'Denmark',        errors:1,tours:3, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
+  {c:'Sweden',         errors:0,tours:1, mfe:'N/A',                                              mfeCount:0},
+  {c:'Norway',         errors:1,tours:1, mfe:'Incorrect/Delayed image',                          mfeCount:1},
+  {c:'France',         errors:1,tours:7, mfe:'Late (30 mins plus) / no socials',                mfeCount:1},
+  {c:'Ireland',        errors:0,tours:2, mfe:'N/A',                                              mfeCount:0},
+  {c:'Spain',          errors:0,tours:1, mfe:'N/A',                                              mfeCount:0},
 ];
 
 // June 2026
 const QUALITY_JUN = [
-  {c:'Czech Republic', errors:2, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
-  {c:'Italy',          errors:1, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Poland',         errors:2, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Switzerland',    errors:4, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
-  {c:'UK',             errors:1, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Germany',        errors:1, mfe:'Incorrect/Delayed image (EDP Image)', mfeCount:1},
-  {c:'Norway',         errors:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
-  {c:'Denmark',        errors:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
-  {c:'France',         errors:1, mfe:'Late (30 mins plus) / no socials', mfeCount:1},
+  {c:'Czech Republic', errors:2,tours:1, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
+  {c:'Italy',          errors:1,tours:2, mfe:'Early Image – within 30 mins', mfeCount:1},
+  {c:'Poland',         errors:2,tours:1, mfe:'Early Image – within 30 mins', mfeCount:1},
+  {c:'Switzerland',    errors:4,tours:3, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
+  {c:'UK',             errors:1,tours:4, mfe:'Early Image – within 30 mins', mfeCount:1},
+  {c:'Germany',        errors:1,tours:4, mfe:'Incorrect/Delayed image (EDP Image)', mfeCount:1},
+  {c:'Norway',         errors:1,tours:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
+  {c:'Denmark',        errors:1,tours:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
+  {c:'France',         errors:1,tours:4, mfe:'Late (30 mins plus) / no socials', mfeCount:1},
 ];
 
 // Error type frequency counts derived from screenshot data
@@ -555,12 +555,13 @@ function switchAccPeriod(btn, id){
 
 function buildAccuracyCharts(){
   // ── JAN–MAR ──
-  const jmSorted = [...QUALITY_JM].sort((a,b)=>b.errors-a.errors);
+  const rateOf = c => c.tours>0 ? c.errors/c.tours : 0;
+  const jmSorted = [...QUALITY_JM].sort((a,b)=>rateOf(b)-rateOf(a));
   CHARTS.errrateJM = new Chart(document.getElementById('c-errrate-jm'),{
     type:'bar',
-    data:{labels:jmSorted.map(c=>c.c),datasets:[{data:jmSorted.map(c=>c.errors),backgroundColor:jmSorted.map(c=>errColor(c.errors/Math.max(c.errors,1))),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} errors`}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC,precision:0}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+    data:{labels:jmSorted.map(c=>c.c),datasets:[{data:jmSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:jmSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=jmSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
   });
   const jmTypes = Object.entries(ERR_TYPES_JM).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
   CHARTS.errtypesJM = new Chart(document.getElementById('c-errtypes-jm'),{
@@ -576,12 +577,12 @@ function buildAccuracyCharts(){
   });
 
   // ── APR–MAY ──
-  const amSorted = [...QUALITY_AM].sort((a,b)=>b.errors-a.errors);
+  const amSorted = [...QUALITY_AM].sort((a,b)=>rateOf(b)-rateOf(a));
   CHARTS.errrateAM = new Chart(document.getElementById('c-errrate-am'),{
     type:'bar',
-    data:{labels:amSorted.map(c=>c.c),datasets:[{data:amSorted.map(c=>c.errors),backgroundColor:amSorted.map(c=>{if(c.errors===0)return'#639922';if(c.errors<=1)return'#1D9E75';if(c.errors<=3)return'#E89B2A';return'#E24B4A';}),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} errors`}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC,precision:0}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+    data:{labels:amSorted.map(c=>c.c),datasets:[{data:amSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:amSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=amSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
   });
   const amTypes = Object.entries(ERR_TYPES_AM).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
   CHARTS.errtypesAM = new Chart(document.getElementById('c-errtypes-am'),{
@@ -597,12 +598,12 @@ function buildAccuracyCharts(){
   });
 
   // ── JUNE ──
-  const junSorted = [...QUALITY_JUN].sort((a,b)=>b.errors-a.errors);
+  const junSorted = [...QUALITY_JUN].sort((a,b)=>rateOf(b)-rateOf(a));
   CHARTS.errrateJUN = new Chart(document.getElementById('c-errrate-jun'),{
     type:'bar',
-    data:{labels:junSorted.map(c=>c.c),datasets:[{data:junSorted.map(c=>c.errors),backgroundColor:junSorted.map(c=>{if(c.errors===0)return'#639922';if(c.errors<=1)return'#1D9E75';if(c.errors<=3)return'#E89B2A';return'#E24B4A';}),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.raw} errors`}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC,precision:0}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+    data:{labels:junSorted.map(c=>c.c),datasets:[{data:junSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:junSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=junSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
   });
   const junTypes = Object.entries(ERR_TYPES_JUN).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
   CHARTS.errtypesJUN = new Chart(document.getElementById('c-errtypes-jun'),{
