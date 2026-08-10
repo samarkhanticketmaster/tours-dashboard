@@ -87,18 +87,18 @@ tr:last-child td { border-bottom: none; }
     <div class="mc" id="overview-kpis"></div>
     <div class="card">
       <div class="ct">Monthly tour volume — 2026</div>
-      <div class="cd">Total tours announced per month Jan–Jun 2026</div>
+      <div class="cd">Total tours announced per month, 2026</div>
       <div style="position:relative;width:100%;height:260px;"><canvas id="c-monthly"></canvas></div>
     </div>
     <div class="g2">
       <div class="card" style="margin-bottom:0">
-        <div class="ct">Tour level mix — YTD 2026</div>
-        <div class="cd">Tours at each level Jan–Jun 2026</div>
+        <div class="ct">Tour level mix — 2026</div>
+        <div class="cd">Tours at each level, 2026</div>
         <div style="position:relative;width:100%;height:220px;"><canvas id="c-levels-ytd"></canvas></div>
       </div>
       <div class="card" style="margin-bottom:0">
-        <div class="ct">Offer mix — YTD 2026</div>
-        <div class="cd">Tours by offer type Jan–Jun 2026</div>
+        <div class="ct">Offer mix — 2026</div>
+        <div class="cd">Tours by offer type, 2026</div>
         <div style="position:relative;width:100%;height:220px;"><canvas id="c-offers-ytd"></canvas></div>
       </div>
     </div>
@@ -119,7 +119,7 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <div class="ct">Tours by level, per market</div>
-      <div class="cd">Each market's mix of Level 1, 2 and 3 tours — YTD 2026</div>
+      <div class="cd">Each market's mix of Level 1, 2 and 3 tours — 2026</div>
       <div class="lg">
         <span><span class="ls" style="background:#185FA5;"></span>Level 1</span>
         <span><span class="ls" style="background:#378ADD;"></span>Level 2</span>
@@ -138,13 +138,13 @@ tr:last-child td { border-bottom: none; }
   <div id="tp-products" class="tp">
     <p class="tab-desc">Offer mix and tour level trends across 2026.</p>
     <div class="card">
-      <div class="ct">Offer frequency — YTD 2026</div>
+      <div class="ct">Offer frequency — 2026</div>
       <div class="cd">% of tours that included each offer type</div>
       <div style="position:relative;width:100%;height:280px;"><canvas id="c-offers"></canvas></div>
     </div>
     <div class="g2">
       <div class="card" style="margin-bottom:0">
-        <div class="ct">Tour level mix — YTD 2026</div>
+        <div class="ct">Tour level mix — 2026</div>
         <div class="cd">Percentage of tours at each level</div>
         <div style="position:relative;width:100%;height:220px;"><canvas id="c-levels-comp"></canvas></div>
       </div>
@@ -426,7 +426,7 @@ async function init(){
   }
 }
 
-const MONTHS = ["Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26"];
+const MONTHS = ["Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
 
 function buildAll(RAW_TOURS){
   const totalTours = RAW_TOURS.length;
@@ -657,16 +657,16 @@ const INSIGHTS = {
   unresolved:[
     {market:'Netherlands',issue:'Cameron Whitcomb removed from pipeline — Tu Vi awaiting confirmation that the Thu 18 June announce is cancelled (latest reply 16 June, no central close-out)',date:'2026-06-16'},
     {market:'Netherlands',issue:'Muse promoter copy links to external Muse store — flagged not to use; awaiting compliant alternative wording',date:'2026-06-12'},
-    {market:'Italy',issue:'Whether the Artist Presale can be promoted on the EADP — Marco\u2019s question raised 28 May, still awaiting confirmation',date:'2026-05-28'},
+    {market:'Italy',issue:'Whether the Artist Presale can be promoted on the EADP — Marco’s question raised 28 May, still awaiting confirmation',date:'2026-05-28'},
     {market:'Ireland',issue:'TM1 images sometimes need multiple attempts to update — Jason flagged as a recurring reliability issue; under investigation with Content',date:'2026-05-28'},
   ],
   recommendations:[
-    {title:'Communicate Imagery Rollout to the Wider TM Music Team',detail:'Denmark (Stine) flagged the central imagery change wasn\u2019t communicated beyond this channel, causing confusion on Bryson Tiller. Ensure the wider team and Client Support are formally briefed so the centralised process is understood end-to-end, not just by reps.'},
+    {title:'Communicate Imagery Rollout to the Wider TM Music Team',detail:'Denmark (Stine) flagged the central imagery change wasn’t communicated beyond this channel, causing confusion on Bryson Tiller. Ensure the wider team and Client Support are formally briefed so the centralised process is understood end-to-end, not just by reps.'},
     {title:'Issue Clear Written Guidance on Third-Party Link-Outs',detail:'Multiple markets keep receiving promoter copy with external links (Muse, Masego, Karol G). A short written policy on not linking out from TM channels — with the approved sign-up URLs and compliant alternatives — would pre-empt these repeated queries.'},
     {title:'Stabilise TM1 Image Updating',detail:'Ireland, Germany and Netherlands report images needing multiple attempts and support-act images not updating. Now that uploads are centralised, prioritise TM1 technical reliability so the change delivers its intended benefit.'},
-    {title:'Act on the Smaller-Market Support Asks',detail:'Niklas\u2019 proposals (central ADP/EDP upload, shared blog copy ahead of announce, central homepage spotlight uploads) drew the strongest positive reaction in the channel. Close the loop with a concrete response so engaged markets see their feedback shaping the roadmap.'},
+    {title:'Act on the Smaller-Market Support Asks',detail:'Niklas’ proposals (central ADP/EDP upload, shared blog copy ahead of announce, central homepage spotlight uploads) drew the strongest positive reaction in the channel. Close the loop with a concrete response so engaged markets see their feedback shaping the roadmap.'},
     {title:'Add Venue Type to the Weekly Pipeline Email',detail:'Poland (Magda) asked for club/arena/stadium indicators in the pipeline email to aid local planning. A low-effort addition that several markets would benefit from when resourcing announce weeks.'},
-    {title:'Re-Engage the Silent Markets',detail:'Finland, Sweden, Norway, France, Czech Republic and the EEMEA/Africa cluster have had little or no channel activity. A light-touch prompt or direct check-in would confirm whether they\u2019re receiving value or quietly disengaged.'},
+    {title:'Re-Engage the Silent Markets',detail:'Finland, Sweden, Norway, France, Czech Republic and the EEMEA/Africa cluster have had little or no channel activity. A light-touch prompt or direct check-in would confirm whether they’re receiving value or quietly disengaged.'},
   ],
 };
 
@@ -679,7 +679,7 @@ function build(RAW_TOURS, M){
   const topOffer = Object.entries(offerCounts).sort((a,b)=>b[1]-a[1])[0];
   const recordMonth = Object.entries(monthlyCounts).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('overview-kpis').innerHTML=`
-    <div class="mv"><div class="ml">Total Tours YTD</div><div class="mn">${totalTours}</div><div class="ms">Jan–Jun 2026</div></div>
+    <div class="mv"><div class="ml">Total Tours 2026</div><div class="mn">${totalTours}</div><div class="ms">Full year 2026</div></div>
     <div class="mv"><div class="ml">Record Month</div><div class="mn" style="font-size:18px;margin-top:4px;">${recordMonth[0]}</div><div class="badge bg">${recordMonth[1]} tours</div></div>
     <div class="mv"><div class="ml">Top Market</div><div class="mn" style="font-size:18px;margin-top:4px;">${topMarket[0]}</div><div class="badge bi">${topMarket[1]} tours</div></div>
     <div class="mv"><div class="ml">Top Offer Type</div><div class="mn" style="font-size:18px;margin-top:4px;">${topOffer[0]}</div><div class="badge bg">${topOffer[1]} tours</div></div>
