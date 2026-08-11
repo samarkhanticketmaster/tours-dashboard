@@ -102,6 +102,11 @@ tr:last-child td { border-bottom: none; }
         <div style="position:relative;width:100%;height:420px;"><canvas id="c-offers-ytd"></canvas></div>
       </div>
     </div>
+    <div class="card">
+      <div class="ct">Top 10 Promoters — 2026</div>
+      <div class="cd">Tours by Primary Client Partner · top 10, everyone else grouped as Other</div>
+      <div style="position:relative;width:100%;height:420px;"><canvas id="c-promoters"></canvas></div>
+    </div>
   </div>
 
   <!-- MARKETS -->
@@ -397,6 +402,7 @@ function rowsToTours(rows){
     month: header.findIndex(h=>h.includes('month')),
     level: header.findIndex(h=>h.includes('asana marketing level')),
     offers: header.findIndex(h=>h.includes('offer type')),
+    promoter: header.findIndex(h=>h.includes('primary client partner')),
   };
   const tours = [];
   for(let i=headerRowIdx+1;i<rows.length;i++){
@@ -409,6 +415,7 @@ function rowsToTours(rows){
       month: (r[idx.month]||'').trim(),
       level: parseInt(lvlRaw)||0,
       offers: splitCommas(r[idx.offers]).map(normaliseOffer).filter(Boolean),
+      promoter: idx.promoter>=0 ? (r[idx.promoter]||'').trim() : '',
     });
   }
   return tours;
@@ -495,7 +502,9 @@ function buildAll(RAW_TOURS){
     if(!marketByMonth[mk]) marketByMonth[mk] = {};
     marketByMonth[mk][t.month] = (marketByMonth[mk][t.month]||0) + 1;
   }));
-  build(RAW_TOURS, {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth});
+  const promoterCounts = {};
+  RAW_TOURS.forEach(t => { const p=(t.promoter||'').trim(); if(!p) return; promoterCounts[p]=(promoterCounts[p]||0)+1; });
+  build(RAW_TOURS, {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth, promoterCounts});
 }
 
 // ── Accuracy data — three periods ────────────────────────────
@@ -717,7 +726,7 @@ const INSIGHTS = {
 const MARKET_MSG_COUNT = {Netherlands:20,Denmark:13,Germany:11,Italy:8,Belgium:6,Ireland:6,Spain:6,Poland:4,UK:4,Switzerland:3};
 
 function build(RAW_TOURS, M){
-  const {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth} = M;
+  const {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth, promoterCounts} = M;
 
   const topMarket = Object.entries(marketCounts).sort((a,b)=>b[1]-a[1])[0];
   const topOffer = Object.entries(offerCounts).sort((a,b)=>b[1]-a[1])[0];
@@ -749,6 +758,21 @@ function build(RAW_TOURS, M){
     data:{labels:offerLabelsD,datasets:[{data:offerLabelsD.map(o=>offerCounts[o]),backgroundColor:offerLabelsD.map((o,i)=>OFFER_COLORS[i%OFFER_COLORS.length]),borderWidth:2,borderColor:'#fff'}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:BF.family,size:11},color:TC,padding:8,boxWidth:12}}}}
   });
+
+  const promoterEntries = Object.entries(promoterCounts||{}).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+  const promoterTop = promoterEntries.slice(0,10);
+  const promoterRest = promoterEntries.slice(10).reduce((s,e)=>s+e[1],0);
+  const promoterLabels = promoterTop.map(e=>e[0]);
+  const promoterData = promoterTop.map(e=>e[1]);
+  if(promoterRest>0){ promoterLabels.push('Other'); promoterData.push(promoterRest); }
+  const promoterEl = document.getElementById('c-promoters');
+  if(promoterEl && promoterLabels.length){
+    CHARTS.promoters = new Chart(promoterEl,{
+      type:'doughnut',
+      data:{labels:promoterLabels,datasets:[{data:promoterData,backgroundColor:promoterLabels.map((o,i)=>OFFER_COLORS[i%OFFER_COLORS.length]),borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:BF.family,size:11},color:TC,padding:8,boxWidth:12}}}}
+    });
+  }
 
   const mktMonthly = {};
   Object.keys(marketCounts).forEach(mk => {
