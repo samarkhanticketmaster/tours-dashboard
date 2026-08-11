@@ -275,18 +275,13 @@ tr:last-child td { border-bottom: none; }
   <!-- MMR ENGAGEMENT -->
   <div id="tp-engagement" class="tp">
     <p class="tab-desc">Call attendance and Slack activity across the MMR network.</p>
-    <div class="mc">
-      <div class="mv"><div class="ml">Markets on call</div><div class="mn">12</div><div class="ms">of 21 markets</div></div>
-      <div class="mv"><div class="ml">Total Slack activity</div><div class="mn">81</div><div class="ms">comments &amp; replies</div></div>
-      <div class="mv"><div class="ml">Most active on Slack</div><div class="mn" style="font-size:18px;margin-top:4px;">Netherlands</div><div class="badge bg">20 interactions</div></div>
-      <div class="mv"><div class="ml">Active markets</div><div class="mn">13</div><div class="ms">at least one touchpoint</div><div class="badge bi">of 21 total</div></div>
-    </div>
-    <div class="g2">
-      <div class="card" style="margin-bottom:0">
+    <div class="mc" id="engagement-kpis"></div>
+    <div class="g2" style="align-items:stretch">
+      <div class="card" style="margin-bottom:0;display:flex;flex-direction:column">
         <div class="ct">MMR Monthly Forum</div>
         <div class="cd">Market attendance - all calls</div>
         <div id="forum-summary" style="display:flex;gap:18px;margin-bottom:14px;"></div>
-        <div id="forum-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;"></div>
+        <div id="forum-grid" style="flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-content:space-between;"></div>
       </div>
       <div class="card" style="margin-bottom:0">
         <div class="ct">Slack channel activity by market</div>
@@ -297,7 +292,7 @@ tr:last-child td { border-bottom: none; }
     <div class="card">
       <div class="ct">Engagement overview</div>
       <div class="cd">Combined call attendance + Slack activity per market</div>
-      <table><thead><tr><th>Market</th><th class="r">Call Attended</th><th class="r">Slack Activity</th><th>Engagement</th></tr></thead>
+      <table><thead><tr><th>Market</th><th class="r">Calls Attended</th><th class="r">Slack Activity</th><th>Engagement</th></tr></thead>
       <tbody id="eng-table"></tbody></table>
     </div>
   </div>
@@ -347,6 +342,7 @@ const TC = '#666', GC = 'rgba(0,0,0,0.06)';
 const CHARTS = {};
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?output=csv';
+const ENGAGEMENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=981015315&single=true&output=csv';
 
 function parseCSV(text){
   const rows = [];
@@ -418,6 +414,40 @@ function rowsToTours(rows){
   return tours;
 }
 
+function attendedCount(s){
+  const t=(s||'').trim().toLowerCase();
+  if(t==='') return 0;
+  const n=parseFloat(t);
+  if(!isNaN(n)) return n>0 ? Math.round(n) : 0;
+  return (t==='yes'||t==='y'||t==='true'||t==='x'||t==='✓'||t==='attended'||t==='present') ? 1 : 0;
+}
+function rowsToEngagement(rows){
+  if(!rows || !rows.length) return null;
+  let h=-1;
+  for(let i=0;i<Math.min(rows.length,10);i++){
+    if(rows[i].some(c=>(c||'').trim().toLowerCase()==='market')){ h=i; break; }
+  }
+  if(h===-1) return null;
+  const header=rows[h].map(c=>(c||'').trim().toLowerCase());
+  const im=header.findIndex(c=>c==='market');
+  const ic=header.findIndex(c=>c.includes('attend'));
+  const is=header.findIndex(c=>c.includes('slack'));
+  if(im<0) return null;
+  const out=[];
+  for(let i=h+1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r || !r[im] || !r[im].trim()) continue;
+    const calls = ic>=0 ? attendedCount(r[ic]) : 0;
+    out.push({
+      m: r[im].trim(),
+      call: calls>0 ? 1 : 0,
+      calls: calls,
+      slack: is>=0 ? (parseInt((r[is]||'').replace(/[^0-9]/g,''))||0) : 0,
+    });
+  }
+  return out.length ? out : null;
+}
+
 async function init(){
   try {
     const res = await fetch(CSV_URL);
@@ -426,6 +456,10 @@ async function init(){
     const rows = parseCSV(text);
     const tours = rowsToTours(rows);
     if(!tours.length) throw new Error('No tour rows parsed');
+    try {
+      const eres = await fetch(ENGAGEMENT_CSV_URL);
+      if(eres.ok){ const eng = rowsToEngagement(parseCSV(await eres.text())); if(eng) ENGAGEMENT = eng; }
+    } catch(err){ console.error('Engagement load error:', err); }
     buildAll(tours);
     const meta = document.getElementById('live-status');
     if(meta) meta.textContent = 'Live · updated '+new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
@@ -630,7 +664,7 @@ function buildAccuracyCharts(){
 }
 
 // ── Static reference data ─────────────────────────────────────
-const ENGAGEMENT = [
+let ENGAGEMENT = [
   {m:'UK',call:1,slack:4},{m:'Belgium',call:1,slack:6},{m:'Czech Republic',call:1,slack:0},
   {m:'Denmark',call:1,slack:13},{m:'Finland',call:0,slack:0},{m:'France',call:1,slack:0},
   {m:'Germany + Austria',call:1,slack:11},{m:'Greece & Cyprus',call:0,slack:0},
@@ -820,6 +854,19 @@ function build(RAW_TOURS, M){
   // Build accuracy charts
   buildAccuracyCharts();
 
+  // Engagement KPI cards (computed live from the Engagement sheet)
+  const engTotal = ENGAGEMENT.length;
+  const engOnCall = ENGAGEMENT.filter(e=>e.call).length;
+  const engSlackTotal = ENGAGEMENT.reduce((a,e)=>a+e.slack,0);
+  const engActive = ENGAGEMENT.filter(e=>e.call||e.slack>0).length;
+  const engTop = [...ENGAGEMENT].sort((a,b)=>b.slack-a.slack)[0] || {m:'—',slack:0};
+  document.getElementById('engagement-kpis').innerHTML=`
+    <div class="mv"><div class="ml">Markets on call</div><div class="mn">${engOnCall}</div><div class="ms">of ${engTotal} markets</div></div>
+    <div class="mv"><div class="ml">Total Slack activity</div><div class="mn">${engSlackTotal}</div><div class="ms">comments &amp; replies</div></div>
+    <div class="mv"><div class="ml">Most active on Slack</div><div class="mn" style="font-size:18px;margin-top:4px;">${engTop.m}</div><div class="badge bg">${engTop.slack} interactions</div></div>
+    <div class="mv"><div class="ml">Active markets</div><div class="mn">${engActive}</div><div class="ms">at least one touchpoint</div><div class="badge bi">of ${engTotal} total</div></div>
+  `;
+
   // Engagement — MMR Monthly Forum status grid (attended grouped first, then not-yet)
   const attended = ENGAGEMENT.filter(e=>e.call);
   const notYet = ENGAGEMENT.filter(e=>!e.call);
@@ -827,12 +874,14 @@ function build(RAW_TOURS, M){
     `<div><span style="font-size:22px;font-weight:600;color:#3b6d11;">${attended.length}</span> <span style="font-size:12px;color:#888;">attended</span></div>`+
     `<div><span style="font-size:22px;font-weight:600;color:#aaa;">${notYet.length}</span> <span style="font-size:12px;color:#888;">not yet</span></div>`;
   const fg = document.getElementById('forum-grid');
-  const cell = (name,yes) =>
-    `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid ${yes?'#dbe9c6':'#e8e8e0'};background:${yes?'#eaf3de':'#f5f5f0'};">
-       <span style="color:${yes?'#3b6d11':'#b4b2a9'};font-size:15px;line-height:1;">${yes?'✓':'○'}</span>
+  const cell = (name,cnt) => {
+    const yes = cnt>0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid ${yes?'#dbe9c6':'#e8e8e0'};background:${yes?'#eaf3de':'#f5f5f0'};">
        <span style="font-size:13px;color:${yes?'#3b6d11':'#888'};">${name}</span>
+       <span style="font-size:12px;font-weight:500;white-space:nowrap;border-radius:10px;padding:1px 9px;${yes?'background:#7F77DD;color:#fff;':'color:#b4b2a9;'}">${yes?cnt+(cnt===1?' call':' calls'):'0'}</span>
      </div>`;
-  fg.innerHTML = attended.map(e=>cell(e.m,true)).join('') + notYet.map(e=>cell(e.m,false)).join('');
+  };
+  fg.innerHTML = attended.map(e=>cell(e.m,(typeof e.calls==='number'?e.calls:e.call))).join('') + notYet.map(e=>cell(e.m,0)).join('');
   const slackA = [...ENGAGEMENT].filter(e=>e.slack>0).sort((a,b)=>b.slack-a.slack);
   const maxSlack = Math.max(...slackA.map(e=>e.slack));
   CHARTS.slack = new Chart(document.getElementById('c-slack'),{
@@ -843,7 +892,8 @@ function build(RAW_TOURS, M){
   const et = document.getElementById('eng-table');
   [...ENGAGEMENT].sort((a,b)=>(b.call+b.slack)-(a.call+a.slack)).forEach(e=>{
     const pct=Math.round(e.slack/maxSlack*100)||0;
-    et.innerHTML+=`<tr><td>${e.m}</td><td class="r">${e.call?'<span class="badge bg">✓ Yes</span>':'<span class="badge br">✗ No</span>'}</td><td class="r">${e.slack||'—'}</td>
+    const ecnt=(typeof e.calls==='number'?e.calls:(e.call?1:0));
+    et.innerHTML+=`<tr><td>${e.m}</td><td class="r">${e.call?`<span class="badge" style="background:#7F77DD;color:#fff;">${ecnt} ${ecnt===1?'call':'calls'}</span>`:'<span class="badge br">✗ No</span>'}</td><td class="r">${e.slack||'—'}</td>
       <td style="min-width:140px;padding-right:16px"><div style="font-size:11px;color:#888;margin-bottom:3px">${e.slack>0?e.slack+' interactions':e.call?'Call only':'No activity'}</div>
       <div class="eng-bar"><div class="eng-fill" style="width:${pct}%;background:${e.slack>8?'#378ADD':e.slack>3?'#7F77DD':'#aaa'}"></div></div></td></tr>`;
   });
