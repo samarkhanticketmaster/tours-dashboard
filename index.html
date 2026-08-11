@@ -129,13 +129,13 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <div class="ct">Tours by level, per market</div>
-      <div class="cd">Each market's mix of Level 1, 2 and 3 tours — 2026</div>
+      <div class="cd">Each market's % split by level · number on the right = total tours (2026)</div>
       <div class="lg">
         <span><span class="ls" style="background:#185FA5;"></span>Level 1</span>
         <span><span class="ls" style="background:#378ADD;"></span>Level 2</span>
         <span><span class="ls" style="background:#B5D4F4;"></span>Level 3</span>
       </div>
-      <div style="position:relative;width:100%;height:480px;"><canvas id="c-level-market"></canvas></div>
+      <div id="c-level-market"></div>
     </div>
     <div class="card">
       <div class="ct">Top market pairings</div>
@@ -759,17 +759,17 @@ function build(RAW_TOURS, M){
     const tb=levelByMarket[b][1]+levelByMarket[b][2]+levelByMarket[b][3];
     return tb-ta;
   });
-  CHARTS.levelMarket = new Chart(document.getElementById('c-level-market'),{
-    type:'bar',
-    data:{labels:lvlMarkets,datasets:[
-      {label:'Level 1',data:lvlMarkets.map(m=>levelByMarket[m][1]),backgroundColor:'#185FA5',borderRadius:2},
-      {label:'Level 2',data:lvlMarkets.map(m=>levelByMarket[m][2]),backgroundColor:'#378ADD',borderRadius:2},
-      {label:'Level 3',data:lvlMarkets.map(m=>levelByMarket[m][3]),backgroundColor:'#B5D4F4',borderRadius:2},
-    ]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{stacked:true,grid:{color:GC},ticks:{precision:0,font:BF,color:TC}},
-        y:{stacked:true,grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
+  const lmCols=['#185FA5','#378ADD','#B5D4F4'], lmTxt=['#fff','#fff','#0C447C'];
+  const lmHtml = lvlMarkets.map(m=>{
+    const v=levelByMarket[m], t=v[1]+v[2]+v[3];
+    const seg=(l)=>{const p=t?v[l]/t*100:0;const r=Math.round(p);return `<div style="width:${p}%;background:${lmCols[l-1]};color:${lmTxt[l-1]};font-size:11px;display:flex;align-items:center;justify-content:center;overflow:hidden;">${p>=8?r+'%':''}</div>`;};
+    return `<div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:110px;font-size:12px;text-align:right;flex-shrink:0;color:#2c2c2a;">${m}</div>
+      <div style="flex:1;display:flex;height:24px;border-radius:4px;overflow:hidden;">${seg(1)}${seg(2)}${seg(3)}</div>
+      <div style="width:30px;text-align:right;font-size:12px;color:#888;flex-shrink:0;">${t}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('c-level-market').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">${lmHtml}</div>`;
 
   const pairCounts = {};
   RAW_TOURS.forEach(t => {
