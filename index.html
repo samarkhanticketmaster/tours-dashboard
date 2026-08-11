@@ -99,7 +99,7 @@ tr:last-child td { border-bottom: none; }
       <div class="card" style="margin-bottom:0">
         <div class="ct">Offer mix — 2026</div>
         <div class="cd">Tours by offer type, 2026</div>
-        <div style="position:relative;width:100%;height:220px;"><canvas id="c-offers-ytd"></canvas></div>
+        <div style="position:relative;width:100%;height:420px;"><canvas id="c-offers-ytd"></canvas></div>
       </div>
     </div>
   </div>
@@ -699,10 +699,11 @@ function build(RAW_TOURS, M){
   });
 
   const offerLabelsD = Object.keys(offerCounts).sort((a,b)=>offerCounts[b]-offerCounts[a]);
+  const OFFER_COLORS = ['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A','#639922','#F5A623','#185FA5','#B5D4F4','#A32D2D','#3B6D11','#854F0B','#C98BDB','#2BB0C7','#D98CAE','#8C6D4F','#5B8DEF','#AAB74F','#666666'];
   CHARTS.offersYtd = new Chart(document.getElementById('c-offers-ytd'),{
     type:'doughnut',
-    data:{labels:offerLabelsD,datasets:[{data:offerLabelsD.map(o=>offerCounts[o]),backgroundColor:['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A','#639922','#f5a623'],borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:BF,color:TC,padding:12}}}}
+    data:{labels:offerLabelsD,datasets:[{data:offerLabelsD.map(o=>offerCounts[o]),backgroundColor:offerLabelsD.map((o,i)=>OFFER_COLORS[i%OFFER_COLORS.length]),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:BF.family,size:11},color:TC,padding:8,boxWidth:12}}}}
   });
 
   const mktMonthly = {};
