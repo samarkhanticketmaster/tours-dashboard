@@ -648,6 +648,7 @@ const LIVE_TOUR_INDEX_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-
 
 let LIVE_ERRORS = [];
 let LIVE_TOURS_MONITORED = null;
+let LIVE_TOURS_UNTRACKED = 0;
 let ACC_MARKET_BY_MONTH = {};
 
 
@@ -712,13 +713,26 @@ function aggregateAccuracy(rows, toursByMarket){
   return {markets:markets, types:byType, total:markets.reduce((s,m)=>s+m.errors,0)};
 }
 
+// The tours feed spells months inconsistently — "Mar-26" on most rows but
+// "March-26" on some, and both "Apr-26" and "April-26" appear. Reduce any label
+// to a canonical "mar-26" so no tour is silently dropped from the denominator.
+function normMonth(label){
+  const m = String(label || '').trim().toLowerCase().match(/^([a-z]+)[\s\-\/]+(\d{2,4})$/);
+  if(!m) return '';
+  const yr = m[2].length > 2 ? m[2].slice(-2) : m[2];
+  return m[1].slice(0,3) + '-' + yr;
+}
+
 // Tours announced per market across a period, from the live tours feed.
 function toursByMarketFor(periodKey, marketByMonth){
-  const months = PERIOD_MONTHS[periodKey] || [];
+  const wanted = {};
+  (PERIOD_MONTHS[periodKey] || []).forEach(mo => { wanted[normMonth(mo)] = 1; });
   const out = {};
   Object.keys(marketByMonth || {}).forEach(m => {
     let n = 0;
-    months.forEach(mo => { n += (marketByMonth[m] && marketByMonth[m][mo]) || 0; });
+    Object.keys(marketByMonth[m] || {}).forEach(mo => {
+      if(wanted[normMonth(mo)]) n += marketByMonth[m][mo] || 0;
+    });
     if(n > 0) out[m] = n;
   });
   return out;
@@ -784,9 +798,15 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
       }
     }
     const per = denom ? (agg.total/denom).toFixed(2) : '\u2014';
-    sum.textContent = denom
+    let text = denom
       ? `${agg.total} errors across ${denom} ${basis} · ${per} per tour`
       : `${agg.total} errors`;
+    if(cfg.period === 'live' && LIVE_TOURS_UNTRACKED > 0){
+      text += ' · ' + LIVE_TOURS_UNTRACKED + ' tour'
+            + (LIVE_TOURS_UNTRACKED === 1 ? '' : 's')
+            + ' excluded (sheet has no error log)';
+    }
+    sum.textContent = text;
   }
   return agg;
 }
@@ -828,7 +848,11 @@ function renderLivePanel(marketByMonth){
   renderAccuracyPanel('jun', LIVE_ERRORS, marketByMonth);
 }
 
-// Counts rows on the "Tour index" tab — one per tour sheet the script saw.
+// Counts tours on the "Tour index" tab, but ONLY those whose sheet actually has
+// an error-tracking section. A sheet built from an older template cannot record
+// errors at all, so counting it would make it look like a flawless announce and
+// quietly drag the error rate down. Untracked tours are counted separately and
+// reported on the panel — neither folded in nor silently dropped.
 function parseTourIndex(rows){
   let head = -1;
   for(let i=0;i<rows.length;i++){
@@ -838,12 +862,16 @@ function parseTourIndex(rows){
   if(head === -1) return null;
   const h = rows[head].map(c => (c||'').trim().toLowerCase());
   const iName = h.indexOf('tour name');
-  const names = {};
+  const iLog = h.indexOf('has error log');
+  const tracked = {}, untracked = {};
   for(let r = head+1; r < rows.length; r++){
     const n = (rows[r][iName] || '').trim();
-    if(n) names[n] = 1;
+    if(!n) continue;
+    const hasLog = iLog < 0 || /^y/i.test((rows[r][iLog] || '').trim());
+    (hasLog ? tracked : untracked)[n] = 1;
   }
-  return Object.keys(names).length;
+  LIVE_TOURS_UNTRACKED = Object.keys(untracked).length;
+  return Object.keys(tracked).length;
 }
 
 async function loadAccuracyLive(){
