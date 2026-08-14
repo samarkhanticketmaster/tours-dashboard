@@ -173,20 +173,20 @@ tr:last-child td { border-bottom: none; }
 
   <!-- QUALITY / ACCURACY -->
   <div id="tp-quality" class="tp">
-    <p class="tab-desc">Announcement errors by market and type across 2026.</p>
+    <p class="tab-desc">Announcement errors by market and type. Feb–May 2026 is a fixed baseline from the Announcement Issues Tracker; June onwards is read automatically from each tour’s announcement sheet.</p>
 
     <!-- Period selector -->
     <div class="acc-period-toggle">
-      <button class="pbtn on" onclick="switchAccPeriod(this,'jan-mar')">Jan – Mar 2026</button>
+      <button class="pbtn on" onclick="switchAccPeriod(this,'jan-mar')">Feb – Mar 2026</button>
       <button class="pbtn" onclick="switchAccPeriod(this,'apr-may')">Apr – May 2026</button>
-      <button class="pbtn" onclick="switchAccPeriod(this,'jun')">June 2026</button>
+      <button class="pbtn" onclick="switchAccPeriod(this,'jun')">June 2026 onwards</button>
     </div>
 
     <!-- ── JAN–MAR ── -->
     <div id="acc-jan-mar" class="acc-panel on">
       <div class="g2">
         <div class="card" style="margin-bottom:0;">
-          <div class="ct">Errors per tour — Jan–Mar 2026</div>
+          <div class="ct">Errors per tour — Feb–Mar 2026</div>
           <div class="cd">Sorted worst to best</div>
           <div class="lg">
             <span><span class="ls" style="background:#E24B4A;"></span>&gt;1.5 poor</span>
@@ -198,12 +198,13 @@ tr:last-child td { border-bottom: none; }
         </div>
         <div>
           <div class="card">
-            <div class="ct">Most frequent error types — Jan–Mar 2026</div>
+            <div class="ct">Most frequent error types — Feb–Mar 2026</div>
             <div class="cd">Most common error per market</div>
             <div style="position:relative;width:100%;height:320px;"><canvas id="c-errtypes-jm"></canvas></div>
           </div>
           <div class="card">
             <div class="ct">Announcement accuracy by market</div>
+            <div class="cd" id="acc-summary-jm"></div>
             <table>
               <thead><tr><th>Market</th><th class="r">Errors</th><th>Most Frequent Error</th><th class="r">Top Error Count</th></tr></thead>
               <tbody id="quality-table-jm"></tbody>
@@ -235,6 +236,7 @@ tr:last-child td { border-bottom: none; }
           </div>
           <div class="card">
             <div class="ct">Announcement accuracy by market</div>
+            <div class="cd" id="acc-summary-am"></div>
             <table>
               <thead><tr><th>Market</th><th class="r">Errors</th><th>Most Frequent Error</th><th class="r">Top Error Count</th></tr></thead>
               <tbody id="quality-table-am"></tbody>
@@ -246,9 +248,18 @@ tr:last-child td { border-bottom: none; }
 
     <!-- ── JUNE ── -->
     <div id="acc-jun" class="acc-panel">
+      <div class="card" id="acc-live-empty">
+        <div class="ct">Awaiting live data</div>
+        <div class="cd" id="acc-live-msg">This panel fills itself from the announcement
+          sheets once the Announcement Error Aggregator script is running and its
+          <strong>Errors</strong> tab is published to the web. Until then it stays empty
+          on purpose &mdash; the figures previously shown here could not be traced to a
+          source, so they have been removed rather than left to look authoritative.</div>
+      </div>
+      <div id="acc-live-content" style="display:none;">
       <div class="g2">
         <div class="card" style="margin-bottom:0;">
-          <div class="ct">Errors per tour — June 2026</div>
+          <div class="ct">Errors per tour — June 2026 onwards</div>
           <div class="cd">Sorted worst to best</div>
           <div class="lg">
             <span><span class="ls" style="background:#E24B4A;"></span>&gt;1.5 poor</span>
@@ -260,18 +271,20 @@ tr:last-child td { border-bottom: none; }
         </div>
         <div>
           <div class="card">
-            <div class="ct">Most frequent error types — June 2026</div>
+            <div class="ct">Most frequent error types — June 2026 onwards</div>
             <div class="cd">Most common error per market</div>
             <div style="position:relative;width:100%;height:320px;"><canvas id="c-errtypes-jun"></canvas></div>
           </div>
           <div class="card">
             <div class="ct">Announcement accuracy by market</div>
+            <div class="cd" id="acc-summary-jun"></div>
             <table>
               <thead><tr><th>Market</th><th class="r">Errors</th><th>Most Frequent Error</th><th class="r">Top Error Count</th></tr></thead>
               <tbody id="quality-table-jun"></tbody>
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -468,6 +481,7 @@ async function init(){
       if(eres.ok){ const eng = rowsToEngagement(parseCSV(await eres.text())); if(eng) ENGAGEMENT = eng; }
     } catch(err){ console.error('Engagement load error:', err); }
     buildAll(tours);
+    loadAccuracyLive();
     const meta = document.getElementById('live-status');
     if(meta) meta.textContent = 'Live · updated '+new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
   } catch(e){
@@ -508,85 +522,134 @@ function buildAll(RAW_TOURS){
   build(RAW_TOURS, {totalTours, monthlyCounts, marketCounts, levelCounts, offerCounts, marketByMonth, promoterCounts});
 }
 
-// ── Accuracy data — three periods ────────────────────────────
-// Jan–Mar 2026
-const QUALITY_JM = [
-  {c:'Czech Republic', errors:5,tours:2,  mfe:'N/A',                                              mfeCount:'1 of each'},
-  {c:'Austria',        errors:7,tours:4,  mfe:'Early Image – beyond 30 mins',                    mfeCount:6},
-  {c:'Italy',          errors:5,tours:5,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
-  {c:'Poland',         errors:3,tours:4,  mfe:'Late about copy / no about module',               mfeCount:2},
-  {c:'Switzerland',    errors:5,tours:7,  mfe:'Late (30 mins plus) / no socials',                mfeCount:2},
-  {c:'Belgium',        errors:4,tours:6,  mfe:'Early Image – beyond 30 mins',                    mfeCount:3},
-  {c:'UK',             errors:10,tours:14, mfe:'Incorrect/Delayed image',                          mfeCount:3},
-  {c:'Netherlands',    errors:8,tours:14,  mfe:'Improperly positioned image (head chopped off)',  mfeCount:2},
-  {c:'Germany',        errors:7,tours:13,  mfe:'Early Image – beyond 30 mins',                    mfeCount:7},
-  {c:'Denmark',        errors:2,tours:4,  mfe:'Early Image >30 mins & Incorrect EDP + search',   mfeCount:'1 each'},
-  {c:'Sweden',         errors:2,tours:4,  mfe:'Incorrect EDP + search & Late (30 mins plus) / no socials', mfeCount:'1 each'},
-  {c:'Norway',         errors:2,tours:4,  mfe:'Early Image >30 mins & Late about copy / no about module',  mfeCount:'1 each'},
-  {c:'France',         errors:5,tours:12,  mfe:'Late (30 mins plus) / no socials',                mfeCount:3},
-  {c:'Ireland',        errors:1,tours:6,  mfe:'Early Image – beyond 30 mins',                    mfeCount:1},
-  {c:'Spain',          errors:0,tours:4,  mfe:'N/A',                                             mfeCount:0},
+// ── Accuracy data ─────────────────────────────────────────────
+// FEB-MAY 2026 is a frozen historic baseline, taken from
+// Announcement_Issues_Tracker.xlsx and reconciled against every row total,
+// column total, grand total and errors-per-tour figure in that file
+// (Feb-Mar: 65 errors / 15 tours = 4.33 · Apr-May: 20 / 7 = 2.86).
+// Don't hand-edit these rows; regenerate them if the tracker is corrected.
+//
+// JUNE 2026 ONWARDS is generated automatically by the Announcement Error
+// Aggregator Apps Script, which reads each tour's announcement sheet on an
+// hourly trigger. Publish its "Errors" tab to the web (File > Share >
+// Publish to web > CSV) and paste the link into LIVE_ERRORS_CSV_URL below.
+//
+// Note: the previous version of this tab held hand-typed figures whose
+// error-type chart disagreed with its own market table (45 vs 66 for Jan-Mar).
+// Both are now derived from the same rows, so they cannot drift apart again.
+
+const HISTORIC_ERRORS = [
+  ['Feb-Mar 2026','Austria','Early Image - beyond 30 mins',6],
+  ['Feb-Mar 2026','Austria','Fewer socials than agreed',1],
+  ['Feb-Mar 2026','Belgium','Early Image - beyond 30 mins',3],
+  ['Feb-Mar 2026','Belgium','Missing spotlight',1],
+  ['Feb-Mar 2026','Czech Republic','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Czech Republic','Improperly positioned image',1],
+  ['Feb-Mar 2026','Czech Republic','Late about copy / no about module',1],
+  ['Feb-Mar 2026','Czech Republic','Late (30 mins plus) / no socials',1],
+  ['Feb-Mar 2026','Czech Republic','Fewer socials than agreed',1],
+  ['Feb-Mar 2026','Denmark','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Denmark','Incorrect EDP + search',1],
+  ['Feb-Mar 2026','France','Incorrect / Delayed image',1],
+  ['Feb-Mar 2026','France','Late (30 mins plus) / no socials',3],
+  ['Feb-Mar 2026','France','Missing spotlight',1],
+  ['Feb-Mar 2026','Germany','Early Image - beyond 30 mins',7],
+  ['Feb-Mar 2026','Ireland','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Italy','Early Image - beyond 30 mins',3],
+  ['Feb-Mar 2026','Italy','Improperly positioned image',1],
+  ['Feb-Mar 2026','Italy','Incorrect EDP + search',1],
+  ['Feb-Mar 2026','Netherlands','Early Image - within 30 mins',1],
+  ['Feb-Mar 2026','Netherlands','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Netherlands','Improperly positioned image',2],
+  ['Feb-Mar 2026','Netherlands','Incorrect EDP + search',1],
+  ['Feb-Mar 2026','Netherlands','Late (30 mins plus) / no socials',1],
+  ['Feb-Mar 2026','Netherlands','Error in social post',1],
+  ['Feb-Mar 2026','Netherlands','Artist Naming Error',1],
+  ['Feb-Mar 2026','Norway','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Norway','Late about copy / no about module',1],
+  ['Feb-Mar 2026','Poland','Incorrect / Delayed image',1],
+  ['Feb-Mar 2026','Poland','Late about copy / no about module',2],
+  ['Feb-Mar 2026','Sweden','Incorrect EDP + search',1],
+  ['Feb-Mar 2026','Sweden','Late (30 mins plus) / no socials',1],
+  ['Feb-Mar 2026','Switzerland','Early Image - beyond 30 mins',1],
+  ['Feb-Mar 2026','Switzerland','Late (30 mins plus) / no socials',2],
+  ['Feb-Mar 2026','Switzerland','Missing spotlight',1],
+  ['Feb-Mar 2026','Switzerland','Artist Naming Error',1],
+  ['Feb-Mar 2026','UK','Incorrect / Delayed image',3],
+  ['Feb-Mar 2026','UK','Incorrect EDP + search',1],
+  ['Feb-Mar 2026','UK','Late about copy / no about module',2],
+  ['Feb-Mar 2026','UK','Late (30 mins plus) / no socials',2],
+  ['Feb-Mar 2026','UK','Artist Naming Error',1],
+  ['Apr-May 2026','Austria','Early Image - beyond 30 mins',1],
+  ['Apr-May 2026','Belgium','Early Image - within 30 mins',1],
+  ['Apr-May 2026','Belgium','Early Image - beyond 30 mins',1],
+  ['Apr-May 2026','Belgium','Improperly positioned image',1],
+  ['Apr-May 2026','Czech Republic','Early Image - beyond 30 mins',1],
+  ['Apr-May 2026','Czech Republic','Fewer socials than agreed',1],
+  ['Apr-May 2026','Denmark','Improperly positioned image',1],
+  ['Apr-May 2026','France','Late (30 mins plus) / no socials',1],
+  ['Apr-May 2026','Germany','Early Image - beyond 30 mins',1],
+  ['Apr-May 2026','Germany','Improperly positioned image',1],
+  ['Apr-May 2026','Germany','Late about copy / no about module',1],
+  ['Apr-May 2026','Netherlands','Improperly positioned image',1],
+  ['Apr-May 2026','Norway','Incorrect / Delayed image',1],
+  ['Apr-May 2026','Poland','Late about copy / no about module',2],
+  ['Apr-May 2026','Switzerland','Improperly positioned image',1],
+  ['Apr-May 2026','Switzerland','Incorrect / Delayed image',1],
+  ['Apr-May 2026','Switzerland','Late about copy / no about module',1],
+  ['Apr-May 2026','Switzerland','Late (30 mins plus) / no socials',1],
+  ['Apr-May 2026','UK','Early Image - within 30 mins',1],
 ];
 
-// Apr–May 2026
-const QUALITY_AM = [
-  {c:'Czech Republic', errors:2,tours:1, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Austria',        errors:0,tours:0, mfe:'—',                                                mfeCount:0},
-  {c:'Italy',          errors:0,tours:2, mfe:'N/A',                                              mfeCount:0},
-  {c:'Poland',         errors:2,tours:2, mfe:'Late about copy / no about module',               mfeCount:2},
-  {c:'Switzerland',    errors:4,tours:1, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Belgium',        errors:3,tours:5, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'UK',             errors:1,tours:7, mfe:'Early Image – within 30 mins',                    mfeCount:1},
-  {c:'Netherlands',    errors:1,tours:6, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
-  {c:'Germany',        errors:3,tours:7, mfe:'N/A',                                              mfeCount:'1 each'},
-  {c:'Denmark',        errors:1,tours:3, mfe:'Improperly positioned image (head chopped off)',  mfeCount:1},
-  {c:'Sweden',         errors:0,tours:1, mfe:'N/A',                                              mfeCount:0},
-  {c:'Norway',         errors:1,tours:1, mfe:'Incorrect/Delayed image',                          mfeCount:1},
-  {c:'France',         errors:1,tours:7, mfe:'Late (30 mins plus) / no socials',                mfeCount:1},
-  {c:'Ireland',        errors:0,tours:2, mfe:'N/A',                                              mfeCount:0},
-  {c:'Spain',          errors:0,tours:1, mfe:'N/A',                                              mfeCount:0},
-];
+// Tours monitored per period, from the tracker.
+const HISTORIC_TOURS_MONITORED = {'Feb-Mar 2026':15, 'Apr-May 2026':7};
 
-// June 2026
-const QUALITY_JUN = [
-  {c:'Czech Republic', errors:2,tours:1, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
-  {c:'Italy',          errors:1,tours:2, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Poland',         errors:2,tours:1, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Switzerland',    errors:4,tours:3, mfe:'Early Image – within 30 mins', mfeCount:'1 each'},
-  {c:'UK',             errors:1,tours:4, mfe:'Early Image – within 30 mins', mfeCount:1},
-  {c:'Germany',        errors:1,tours:4, mfe:'Incorrect/Delayed image (EDP Image)', mfeCount:1},
-  {c:'Norway',         errors:1,tours:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
-  {c:'Denmark',        errors:1,tours:1, mfe:'Incorrect/Delayed image',      mfeCount:1},
-  {c:'France',         errors:1,tours:4, mfe:'Late (30 mins plus) / no socials', mfeCount:1},
-];
-
-// Error type frequency counts derived from screenshot data
-const ERR_TYPES_JM = {
-  'Early image ≤30m': 0,
-  'Early image >30m': 28,
-  'Improper image': 2,
-  'Incorrect/Delayed image': 3,
-  'Incorrect EDP/search': 2,
-  'Late/no socials': 7,
-  'Late about copy': 3,
+// Announcement months in each period. Per-market tour counts are read from the
+// live tours feed for these months, so the denominators update themselves.
+const PERIOD_MONTHS = {
+  'Feb-Mar 2026': ['Feb-26','Mar-26'],
+  'Apr-May 2026': ['Apr-26','May-26'],
+  'live':         ['Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26'],
 };
 
-const ERR_TYPES_AM = {
-  'Early image ≤30m': 1,
-  'Early image >30m': 0,
-  'Improper image': 2,
-  'Incorrect/Delayed image': 1,
-  'Incorrect EDP/search': 0,
-  'Late/no socials': 1,
-  'Late about copy': 2,
+const ACC_PANELS = {
+  'jan-mar': {period:'Feb-Mar 2026', rate:'c-errrate-jm',  types:'c-errtypes-jm',
+              table:'quality-table-jm',  kRate:'errrateJM',  kTypes:'errtypesJM',  summary:'acc-summary-jm'},
+  'apr-may': {period:'Apr-May 2026', rate:'c-errrate-am',  types:'c-errtypes-am',
+              table:'quality-table-am',  kRate:'errrateAM',  kTypes:'errtypesAM',  summary:'acc-summary-am'},
+  'jun':     {period:'live',         rate:'c-errrate-jun', types:'c-errtypes-jun',
+              table:'quality-table-jun', kRate:'errrateJUN', kTypes:'errtypesJUN', summary:'acc-summary-jun'},
 };
 
-const ERR_TYPES_JUN = {
-  'Early image ≤30m': 9,
-  'Early image >30m': 0,
-  'Incorrect/Delayed image': 3,
-  'Late/no socials': 1,
+// Short labels for the error-type chart.
+const ERR_SHORT = {
+  'Early Image - within 30 mins':'Early image \u226430m',
+  'Early Image - beyond 30 mins':'Early image >30m',
+  'Improperly positioned image':'Improper image',
+  'Incorrect / Delayed image':'Incorrect/Delayed image',
+  'Incorrect EDP + search':'Incorrect EDP/search',
+  'Late about copy / no about module':'Late about copy',
+  'Late (30 mins plus) / no socials':'Late/no socials',
+  'Error in social post':'Error in social post',
+  'Fewer socials than agreed':'Fewer socials',
+  'Missing spotlight':'Missing spotlight',
+  'Artist Naming Error':'Artist naming',
 };
+
+// Published CSV of the aggregator's "Errors" tab.
+// Left blank deliberately: until it's set, the June panel says so rather than
+// showing numbers nobody can trace to a source.
+const LIVE_ERRORS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=1922219910&single=true&output=csv';
+
+// Published CSV of the aggregator's "Tour index" tab — one row per tour sheet.
+// This is the correct denominator for errors-per-tour: summing per-market tour
+// counts would double-count any tour that spans several markets.
+const LIVE_TOUR_INDEX_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=1966104772&single=true&output=csv';
+
+let LIVE_ERRORS = [];
+let LIVE_TOURS_MONITORED = null;
+let ACC_MARKET_BY_MONTH = {};
+
 
 // ── Helpers ───────────────────────────────────────────────────
 function errColor(v){if(v>1.5)return'#E24B4A';if(v>=0.7)return'#E89B2A';if(v>0)return'#1D9E75';return'#639922';}
@@ -607,71 +670,210 @@ function switchAccPeriod(btn, id){
   setTimeout(()=>{Object.values(CHARTS).forEach(ch=>{try{ch.resize();}catch(e){}});},50);
 }
 
-function buildAccuracyCharts(){
-  // ── JAN–MAR ──
-  const rateOf = c => c.tours>0 ? c.errors/c.tours : 0;
-  const jmSorted = [...QUALITY_JM].sort((a,b)=>rateOf(b)-rateOf(a));
-  CHARTS.errrateJM = new Chart(document.getElementById('c-errrate-jm'),{
-    type:'bar',
-    data:{labels:jmSorted.map(c=>c.c),datasets:[{data:jmSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:jmSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=jmSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
-  const jmTypes = Object.entries(ERR_TYPES_JM).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
-  CHARTS.errtypesJM = new Chart(document.getElementById('c-errtypes-jm'),{
-    type:'bar',
-    data:{labels:jmTypes.map(e=>e[0]),datasets:[{data:jmTypes.map(e=>e[1]),backgroundColor:'#7F77DD',borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
-  const qt1 = document.getElementById('quality-table-jm');
-  [...QUALITY_JM].sort((a,b)=>a.errors-b.errors).forEach(c=>{
-    let cls; if(c.errors===0)cls='bg'; else if(c.errors<=2)cls='bi'; else if(c.errors<=5)cls='ba'; else cls='br';
-    qt1.innerHTML+=`<tr><td>${c.c}</td><td class="r"><span class="badge ${cls}">${c.errors}</span></td><td style="font-size:12px;color:#555">${c.mfe}</td><td class="r dim">${c.mfeCount}</td></tr>`;
+function shortErr(t){ return ERR_SHORT[t] || t; }
+
+// Rolls flat [period, market, errorType, count] rows into everything a panel
+// needs. Market table and error-type chart both come from here, by design.
+function aggregateAccuracy(rows, toursByMarket){
+  const byMarket = {}, byType = {};
+  rows.forEach(r => {
+    const market = r[1], type = r[2], n = Number(r[3]) || 0;
+    if(!byMarket[market]) byMarket[market] = {errors:0, types:{}};
+    byMarket[market].errors += n;
+    byMarket[market].types[type] = (byMarket[market].types[type] || 0) + n;
+    byType[type] = (byType[type] || 0) + n;
   });
 
-  // ── APR–MAY ──
-  const amSorted = [...QUALITY_AM].sort((a,b)=>rateOf(b)-rateOf(a));
-  CHARTS.errrateAM = new Chart(document.getElementById('c-errrate-am'),{
-    type:'bar',
-    data:{labels:amSorted.map(c=>c.c),datasets:[{data:amSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:amSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=amSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
-  const amTypes = Object.entries(ERR_TYPES_AM).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
-  CHARTS.errtypesAM = new Chart(document.getElementById('c-errtypes-am'),{
-    type:'bar',
-    data:{labels:amTypes.map(e=>e[0]),datasets:[{data:amTypes.map(e=>e[1]),backgroundColor:'#7F77DD',borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
-  const qt2 = document.getElementById('quality-table-am');
-  [...QUALITY_AM].sort((a,b)=>a.errors-b.errors).forEach(c=>{
-    let cls; if(c.errors===0)cls='bg'; else if(c.errors<=1)cls='bi'; else if(c.errors<=3)cls='ba'; else cls='br';
-    qt2.innerHTML+=`<tr><td>${c.c}</td><td class="r"><span class="badge ${cls}">${c.errors}</span></td><td style="font-size:12px;color:#555">${c.mfe}</td><td class="r dim">${c.mfeCount}</td></tr>`;
+  // A market that announced tours and logged nothing is a real result — show
+  // it as zero rather than dropping it off the table.
+  Object.keys(toursByMarket).forEach(m => {
+    if(!byMarket[m]) byMarket[m] = {errors:0, types:{}};
   });
 
-  // ── JUNE ──
-  const junSorted = [...QUALITY_JUN].sort((a,b)=>rateOf(b)-rateOf(a));
-  CHARTS.errrateJUN = new Chart(document.getElementById('c-errrate-jun'),{
-    type:'bar',
-    data:{labels:junSorted.map(c=>c.c),datasets:[{data:junSorted.map(c=>+rateOf(c).toFixed(2)),backgroundColor:junSorted.map(c=>errColor(rateOf(c))),borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const c=junSorted[ctx.dataIndex];return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  const markets = Object.keys(byMarket).map(m => {
+    const tours = toursByMarket[m] || 0;
+    const entries = Object.entries(byMarket[m].types).sort((a,b) => b[1]-a[1]);
+    let mfe = '\u2014', mfeCount = 0;
+    if(entries.length){
+      const top = entries[0][1];
+      const tied = entries.filter(e => e[1] === top);
+      mfe = tied.length > 1 ? tied.map(e => shortErr(e[0])).join(', ') : entries[0][0];
+      mfeCount = tied.length > 1 ? top + ' each' : top;
+    }
+    return {
+      c: m,
+      errors: byMarket[m].errors,
+      tours: tours,
+      rate: tours > 0 ? byMarket[m].errors / tours : null,
+      mfe: mfe,
+      mfeCount: mfeCount
+    };
   });
-  const junTypes = Object.entries(ERR_TYPES_JUN).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
-  CHARTS.errtypesJUN = new Chart(document.getElementById('c-errtypes-jun'),{
-    type:'bar',
-    data:{labels:junTypes.map(e=>e[0]),datasets:[{data:junTypes.map(e=>e[1]),backgroundColor:'#7F77DD',borderRadius:4}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
-  });
-  const qt3 = document.getElementById('quality-table-jun');
-  [...QUALITY_JUN].sort((a,b)=>a.errors-b.errors).forEach(c=>{
-    let cls; if(c.errors===0)cls='bg'; else if(c.errors<=1)cls='bi'; else if(c.errors<=3)cls='ba'; else cls='br';
-    qt3.innerHTML+=`<tr><td>${c.c}</td><td class="r"><span class="badge ${cls}">${c.errors}</span></td><td style="font-size:12px;color:#555">${c.mfe}</td><td class="r dim">${c.mfeCount}</td></tr>`;
-  });
+  return {markets:markets, types:byType, total:markets.reduce((s,m)=>s+m.errors,0)};
 }
+
+// Tours announced per market across a period, from the live tours feed.
+function toursByMarketFor(periodKey, marketByMonth){
+  const months = PERIOD_MONTHS[periodKey] || [];
+  const out = {};
+  Object.keys(marketByMonth || {}).forEach(m => {
+    let n = 0;
+    months.forEach(mo => { n += (marketByMonth[m] && marketByMonth[m][mo]) || 0; });
+    if(n > 0) out[m] = n;
+  });
+  return out;
+}
+
+function renderAccuracyPanel(panelKey, rows, marketByMonth){
+  const cfg = ACC_PANELS[panelKey];
+  const toursByMarket = toursByMarketFor(cfg.period, marketByMonth);
+  const agg = aggregateAccuracy(rows, toursByMarket);
+
+  // Only markets with tours in the period can have a rate.
+  const rated = agg.markets.filter(m => m.rate !== null).sort((a,b) => b.rate - a.rate);
+  if(CHARTS[cfg.kRate]){ try{ CHARTS[cfg.kRate].destroy(); }catch(e){} }
+  CHARTS[cfg.kRate] = new Chart(document.getElementById(cfg.rate), {
+    type:'bar',
+    data:{labels:rated.map(c=>c.c),datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
+      backgroundColor:rated.map(c=>errColor(c.rate)),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
+        const c=rated[ctx.dataIndex]; return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},title:{display:true,text:'errors per tour',font:{family:BF.family,size:10},color:TC}},
+              y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+
+  const types = Object.entries(agg.types).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+  if(CHARTS[cfg.kTypes]){ try{ CHARTS[cfg.kTypes].destroy(); }catch(e){} }
+  CHARTS[cfg.kTypes] = new Chart(document.getElementById(cfg.types), {
+    type:'bar',
+    data:{labels:types.map(e=>shortErr(e[0])),datasets:[{data:types.map(e=>e[1]),backgroundColor:'#7F77DD',borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},
+              y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+
+  const tb = document.getElementById(cfg.table);
+  if(tb){
+    tb.innerHTML = agg.markets
+      .sort((a,b) => a.errors - b.errors || a.c.localeCompare(b.c))
+      .map(c => {
+        let cls; if(c.errors===0)cls='bg'; else if(c.errors<=2)cls='bi'; else if(c.errors<=5)cls='ba'; else cls='br';
+        const rate = c.rate === null ? '<span class="dim">no tours</span>' : c.rate.toFixed(2);
+        return `<tr><td>${c.c}</td><td class="r"><span class="badge ${cls}">${c.errors}</span></td>`
+             + `<td style="font-size:12px;color:#555">${c.mfe}</td><td class="r dim">${c.mfeCount}</td></tr>`;
+      }).join('');
+  }
+
+  const sum = document.getElementById(cfg.summary);
+  if(sum){
+    // Distinct tours, never a sum of per-market counts.
+    let denom = HISTORIC_TOURS_MONITORED[cfg.period];
+    let basis = 'tours monitored';
+    if(denom === undefined){
+      if(LIVE_TOURS_MONITORED !== null){
+        denom = LIVE_TOURS_MONITORED;
+      } else {
+        // Fall back to distinct tours seen in the error feed. That only counts
+        // tours that logged at least one error, so say so rather than implying
+        // it covers everything monitored.
+        const names = {};
+        rows.forEach(r => { if(r[4]) names[r[4]] = 1; });
+        denom = Object.keys(names).length;
+        basis = 'tours with logged errors';
+      }
+    }
+    const per = denom ? (agg.total/denom).toFixed(2) : '\u2014';
+    sum.textContent = denom
+      ? `${agg.total} errors across ${denom} ${basis} · ${per} per tour`
+      : `${agg.total} errors`;
+  }
+  return agg;
+}
+
+// Parses the aggregator's published "Errors" tab into panel rows.
+// Finds the header row by name so an extra blank leading row can't break it.
+function parseLiveErrors(rows){
+  let head = -1;
+  for(let i=0;i<rows.length;i++){
+    const cells = rows[i].map(c => (c||'').trim().toLowerCase());
+    if(cells.indexOf('market') !== -1 && cells.indexOf('error type') !== -1){ head = i; break; }
+  }
+  if(head === -1) return [];
+  const h = rows[head].map(c => (c||'').trim().toLowerCase());
+  const iM = h.indexOf('market'), iT = h.indexOf('error type'), iP = h.indexOf('period');
+  const iTour = h.indexOf('tour name');
+  const out = [];
+  for(let r = head+1; r < rows.length; r++){
+    const market = (rows[r][iM] || '').trim();
+    const type = (rows[r][iT] || '').trim();
+    if(!market || !type) continue;
+    // The live tab is one row per occurrence, so each row counts as 1.
+    const tour = iTour >= 0 ? (rows[r][iTour]||'').trim() : '';
+    out.push([iP >= 0 ? (rows[r][iP]||'').trim() : 'live', market, type, 1, tour]);
+  }
+  return out;
+}
+
+function renderLivePanel(marketByMonth){
+  const empty = document.getElementById('acc-live-empty');
+  const content = document.getElementById('acc-live-content');
+  if(!LIVE_ERRORS.length){
+    if(empty) empty.style.display = '';
+    if(content) content.style.display = 'none';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  if(content) content.style.display = '';
+  renderAccuracyPanel('jun', LIVE_ERRORS, marketByMonth);
+}
+
+// Counts rows on the "Tour index" tab — one per tour sheet the script saw.
+function parseTourIndex(rows){
+  let head = -1;
+  for(let i=0;i<rows.length;i++){
+    const cells = rows[i].map(c => (c||'').trim().toLowerCase());
+    if(cells.indexOf('tour name') !== -1 && cells.indexOf('period') !== -1){ head = i; break; }
+  }
+  if(head === -1) return null;
+  const h = rows[head].map(c => (c||'').trim().toLowerCase());
+  const iName = h.indexOf('tour name');
+  const names = {};
+  for(let r = head+1; r < rows.length; r++){
+    const n = (rows[r][iName] || '').trim();
+    if(n) names[n] = 1;
+  }
+  return Object.keys(names).length;
+}
+
+async function loadAccuracyLive(){
+  if(!LIVE_ERRORS_CSV_URL){ renderLivePanel(ACC_MARKET_BY_MONTH); return; }
+  try {
+    const res = await fetch(LIVE_ERRORS_CSV_URL);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    LIVE_ERRORS = parseLiveErrors(parseCSV(await res.text()));
+    if(LIVE_TOUR_INDEX_CSV_URL){
+      try {
+        const tres = await fetch(LIVE_TOUR_INDEX_CSV_URL);
+        if(tres.ok) LIVE_TOURS_MONITORED = parseTourIndex(parseCSV(await tres.text()));
+      } catch(err){ console.error('Tour index load error:', err); }
+    }
+  } catch(e){
+    console.error('Live accuracy load error:', e);
+    LIVE_ERRORS = [];
+    const note = document.getElementById('acc-live-msg');
+    if(note) note.textContent = 'Could not reach the live error feed: ' + e.message;
+  }
+  renderLivePanel(ACC_MARKET_BY_MONTH);
+}
+
+function buildAccuracyCharts(marketByMonth){
+  ACC_MARKET_BY_MONTH = marketByMonth || {};
+  renderAccuracyPanel('jan-mar', HISTORIC_ERRORS.filter(r => r[0] === 'Feb-Mar 2026'), ACC_MARKET_BY_MONTH);
+  renderAccuracyPanel('apr-may', HISTORIC_ERRORS.filter(r => r[0] === 'Apr-May 2026'), ACC_MARKET_BY_MONTH);
+  renderLivePanel(ACC_MARKET_BY_MONTH);
+}
+
 
 // ── Static reference data ─────────────────────────────────────
 let ENGAGEMENT = [
@@ -879,7 +1081,7 @@ function build(RAW_TOURS, M){
   });
 
   // Build accuracy charts
-  buildAccuracyCharts();
+  buildAccuracyCharts(marketByMonth);
 
   // Engagement KPI cards (computed live from the Engagement sheet)
   const engTotal = ENGAGEMENT.length;
