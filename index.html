@@ -111,6 +111,13 @@ tr:last-child td { border-bottom: none; }
       </div>
     </div>
     <div class="card">
+      <div class="ct">Marketer split — 2026</div>
+      <div class="cd">Tours by marketing lead · live from Airtable</div>
+      <div class="lg" id="marketer-legend"></div>
+      <div style="position:relative;width:100%;height:300px;"><canvas id="c-marketers"></canvas></div>
+      <div id="marketer-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
+    </div>
+    <div class="card">
       <div class="ct">Top 10 Promoters — 2026</div>
       <div class="cd">Tours by Primary Client Partner · top 10, everyone else grouped as Other</div>
       <div style="position:relative;width:100%;height:420px;"><canvas id="c-promoters"></canvas></div>
@@ -379,6 +386,82 @@ const CHARTS = {};
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?output=csv';
 const ENGAGEMENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=981015315&single=true&output=csv';
 
+// Live Airtable feed, via the Apps Script proxy. The proxy holds the API token
+// server-side — this page is public, so the token can never live here.
+const MARKETER_API_URL = 'https://script.google.com/macros/s/AKfycbxaj47EFc-3ALPyLUkac6rIT3mZ5-XbJlEE7SWNX86WMCYbJwCushHdsTHryWh8B4li/exec';
+
+// Fixed colours per person, so a slice doesn't change colour when counts move.
+const MARKETER_COLOURS = {
+  'Samar Khan': '#378ADD',
+  'Lizz Steichen': '#7F77DD',
+  'Daniel Kelly': '#1D9E75'
+};
+const MARKETER_FALLBACK = ['#E89B2A', '#D4537E', '#888780'];
+
+async function loadMarketerSplit(){
+  const note = document.getElementById('marketer-note');
+  if(!MARKETER_API_URL){ if(note) note.textContent = 'Not connected.'; return; }
+  try {
+    const res = await fetch(MARKETER_API_URL);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    renderMarketerSplit(data);
+  } catch(e){
+    console.error('Marketer split load error:', e);
+    if(note) note.textContent = 'Could not load the marketer split: ' + e.message;
+  }
+}
+
+function renderMarketerSplit(data){
+  const leads = (data.leads || []).filter(l => l.tours > 0);
+  const total = leads.reduce((s, l) => s + l.tours, 0);
+  const note = document.getElementById('marketer-note');
+  const legend = document.getElementById('marketer-legend');
+
+  if(!total){
+    if(note) note.textContent = 'No tours found for ' + (data.year || '') + '.';
+    return;
+  }
+
+  let spare = 0;
+  const colours = leads.map(l => MARKETER_COLOURS[l.lead]
+    || MARKETER_FALLBACK[spare++ % MARKETER_FALLBACK.length]);
+
+  if(legend){
+    legend.innerHTML = leads.map((l, i) =>
+      '<span><span class="ls" style="background:' + colours[i] + '"></span>'
+      + l.lead + ' ' + l.tours + ' (' + Math.round(l.tours / total * 100) + '%)</span>'
+    ).join('');
+  }
+
+  if(CHARTS.marketers){ try{ CHARTS.marketers.destroy(); }catch(e){} }
+  CHARTS.marketers = new Chart(document.getElementById('c-marketers'), {
+    type: 'pie',
+    data: {
+      labels: leads.map(l => l.lead),
+      datasets: [{
+        data: leads.map(l => l.tours),
+        backgroundColor: colours,
+        borderColor: '#fff', borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c =>
+          ' ' + c.label + ': ' + c.raw + ' tours (' + Math.round(c.raw / total * 100) + '%)' } }
+      }
+    }
+  });
+
+  if(note){
+    note.textContent = total + ' tours announced in ' + data.year
+      + ' \u00b7 read from Airtable ' + (data.cached ? 'moments ago' : 'just now');
+  }
+}
+
 function parseCSV(text){
   const rows = [];
   let row = [], field = '', inQuotes = false;
@@ -499,6 +582,7 @@ async function init(){
     } catch(err){ console.error('Engagement load error:', err); }
     buildAll(tours);
     loadAccuracyLive();
+    loadMarketerSplit();
     const meta = document.getElementById('live-status');
     if(meta) meta.textContent = 'Live · updated '+new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
   } catch(e){
