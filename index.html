@@ -46,6 +46,14 @@ tr:last-child td { border-bottom: none; }
 .pbtn { font-family: inherit; font-size: 13px; padding: 7px 14px; border: 1px solid #d8d8d0; background: transparent; color: #888; border-radius: 8px; cursor: pointer; transition: all .12s; }
 .pbtn:hover { background: #f5f5f0; }
 .pbtn.on { background: #378ADD; color: #fff; border-color: #378ADD; font-weight: 500; }
+/* Accuracy stat strip */
+.acc-strip { display: flex; flex-wrap: wrap; gap: 0; border-top: 1px solid #e8e8e0; border-bottom: 1px solid #e8e8e0; padding: 14px 0; margin-bottom: 20px; }
+.acc-stat { flex: 1 1 130px; padding: 0 18px; border-left: 1px solid #e8e8e0; }
+.acc-stat:first-child { border-left: none; padding-left: 0; }
+.acc-sv { font-size: 26px; font-weight: 500; color: #1a1a1a; line-height: 1.1; }
+.acc-sv-sm { font-size: 18px; font-weight: 500; color: #1a1a1a; line-height: 1.15; padding-top: 6px; }
+.acc-sk { font-size: 11px; color: #999; margin-top: 5px; }
+.acc-sd { font-size: 11px; margin-top: 3px; color: #999; }
 /* Period tabs for accuracy */
 .acc-period-toggle { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
 .acc-panel { display: none; }
@@ -175,6 +183,12 @@ tr:last-child td { border-bottom: none; }
   <div id="tp-quality" class="tp">
     <p class="tab-desc">Announcement errors by market and type. Feb–May 2026 is a fixed baseline from the Announcement Issues Tracker; June onwards is read automatically from each tour’s announcement sheet.</p>
 
+    <div class="card">
+      <div class="ct">Errors per tour over time</div>
+      <div class="cd">Direction of travel across all three periods</div>
+      <div style="position:relative;width:100%;height:230px;"><canvas id="c-acctrend"></canvas></div>
+    </div>
+
     <!-- Period selector -->
     <div class="acc-period-toggle">
       <button class="pbtn on" onclick="switchAccPeriod(this,'jan-mar')">Feb – Mar 2026</button>
@@ -184,6 +198,7 @@ tr:last-child td { border-bottom: none; }
 
     <!-- ── JAN–MAR ── -->
     <div id="acc-jan-mar" class="acc-panel on">
+      <div class="acc-strip" id="acc-stats-jm"></div>
       <div class="g2">
         <div class="card" style="margin-bottom:0;">
           <div class="ct">Errors per tour — Feb–Mar 2026</div>
@@ -216,6 +231,7 @@ tr:last-child td { border-bottom: none; }
 
     <!-- ── APR–MAY ── -->
     <div id="acc-apr-may" class="acc-panel">
+      <div class="acc-strip" id="acc-stats-am"></div>
       <div class="g2">
         <div class="card" style="margin-bottom:0;">
           <div class="ct">Errors per tour — Apr–May 2026</div>
@@ -248,6 +264,7 @@ tr:last-child td { border-bottom: none; }
 
     <!-- ── JUNE ── -->
     <div id="acc-jun" class="acc-panel">
+      <div class="acc-strip" id="acc-stats-jun"></div>
       <div class="card" id="acc-live-empty">
         <div class="ct">Awaiting live data</div>
         <div class="cd" id="acc-live-msg">This panel fills itself from the announcement
@@ -673,12 +690,105 @@ function switchAccPeriod(btn, id){
 
 function shortErr(t){ return ERR_SHORT[t] || t; }
 
+// Period order, so each panel can compare itself to the one before.
+const ACC_ORDER = ['Feb-Mar 2026', 'Apr-May 2026', 'live'];
+const ACC_STATS = {};
+
+function accStatStrip(period, agg, denom, basis){
+  const per = denom ? agg.total / denom : null;
+  ACC_STATS[period] = {total: agg.total, denom: denom, per: per};
+
+  let delta = '<div class="acc-sd">no earlier period</div>';
+  const i = ACC_ORDER.indexOf(period);
+  if(i > 0){
+    const prev = ACC_STATS[ACC_ORDER[i-1]];
+    if(prev && prev.per && per !== null){
+      const pct = Math.round((per - prev.per) / prev.per * 100);
+      if(pct === 0){
+        delta = '<div class="acc-sd">no change on previous</div>';
+      } else {
+        const better = pct < 0;
+        delta = '<div class="acc-sd" style="color:' + (better ? '#1D9E75' : '#E24B4A') + '">'
+              + (better ? '\u2193 ' : '\u2191 ') + Math.abs(pct) + '% vs previous period</div>';
+      }
+    }
+  }
+
+  // Worst market by count, listing ties rather than picking one arbitrarily.
+  const top = agg.markets.reduce((a, m) => Math.max(a, m.errors), 0);
+  const worst = agg.markets.filter(m => m.errors === top && top > 0).map(m => m.c);
+  const worstLabel = worst.length ? (worst.length > 3 ? worst.length + ' markets' : worst.join(', ')) : '\u2014';
+
+  // Cause of errors. Only recorded from June 2026, so say so rather than showing zero.
+  const ctxEntries = Object.entries(agg.contexts || {}).sort((a,b) => b[1]-a[1]);
+  let causeMain, causeSub;
+  if(!ctxEntries.length){
+    causeMain = '<div class="acc-sv-sm" style="color:#999;">Not recorded</div>';
+    causeSub  = 'before June 2026';
+  } else {
+    causeMain = '<div class="acc-sv-sm">' + ctxEntries[0][1]
+              + ' <span style="font-size:13px;color:#999;font-weight:400;">'
+              + ctxEntries[0][0].toLowerCase() + '</span></div>';
+    causeSub  = ctxEntries.slice(1, 3).map(e => e[1] + ' ' + e[0].toLowerCase()).join(' \u00b7 ') || '\u2014';
+  }
+
+  return ''
+    + '<div class="acc-stat"><div class="acc-sv">' + (per === null ? '\u2014' : per.toFixed(2))
+      + '</div><div class="acc-sk">errors per tour</div>' + delta + '</div>'
+    + '<div class="acc-stat"><div class="acc-sv">' + agg.total
+      + '</div><div class="acc-sk">errors logged</div>'
+      + '<div class="acc-sd">across ' + denom + ' ' + basis + '</div></div>'
+    + '<div class="acc-stat"><div class="acc-sv-sm">' + worstLabel
+      + '</div><div class="acc-sk">most errors</div>'
+      + '<div class="acc-sd">' + (top > 0 ? top + ' each' : 'none logged') + '</div></div>'
+    + '<div class="acc-stat">' + causeMain
+      + '<div class="acc-sk">' + causeSub + '</div>'
+      + '<div class="acc-sd">cause of errors</div></div>';
+}
+
+// One line across all periods. Built after each render so the live period
+// updates itself once the feed lands.
+function renderAccuracyTrend(){
+  const el = document.getElementById('c-acctrend');
+  if(!el) return;
+  const labels = ['Feb\u2013Mar 2026', 'Apr\u2013May 2026', 'June onwards'];
+  const data = ACC_ORDER.map(p => {
+    const s = ACC_STATS[p];
+    return s && s.per !== null && s.per !== undefined ? +s.per.toFixed(2) : null;
+  });
+  if(CHARTS.acctrend){ try{ CHARTS.acctrend.destroy(); }catch(e){} }
+  CHARTS.acctrend = new Chart(el, {
+    type: 'line',
+    data: {labels: labels, datasets: [{
+      data: data, borderColor: '#378ADD', borderWidth: 2,
+      backgroundColor: 'rgba(55,138,221,0.10)', fill: true,
+      pointRadius: 7, pointBackgroundColor: '#378ADD',
+      pointBorderColor: '#fff', pointBorderWidth: 2,
+      tension: 0.25, spanGaps: true
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => {
+        const s = ACC_STATS[ACC_ORDER[c.dataIndex]];
+        return ' ' + c.raw + ' per tour (' + s.total + '/' + s.denom + ')';
+      }}}},
+      scales: {
+        y: {beginAtZero: true, grid: {color: GC}, ticks: {font: BF, color: TC},
+            title: {display: true, text: 'errors per tour', font: {family: BF.family, size: 10}, color: TC}},
+        x: {grid: {display: false}, ticks: {font: BF, color: TC}}
+      }
+    }
+  });
+}
+
 // Rolls flat [period, market, errorType, count] rows into everything a panel
 // needs. Market table and error-type chart both come from here, by design.
 function aggregateAccuracy(rows, toursByMarket){
-  const byMarket = {}, byType = {};
+  const byMarket = {}, byType = {}, byContext = {};
   rows.forEach(r => {
     const market = r[1], type = r[2], n = Number(r[3]) || 0;
+    const ctx = (r[5] || '').trim();
+    if(ctx) byContext[ctx] = (byContext[ctx] || 0) + n;
     if(!byMarket[market]) byMarket[market] = {errors:0, types:{}};
     byMarket[market].errors += n;
     byMarket[market].types[type] = (byMarket[market].types[type] || 0) + n;
@@ -710,7 +820,8 @@ function aggregateAccuracy(rows, toursByMarket){
       mfeCount: mfeCount
     };
   });
-  return {markets:markets, types:byType, total:markets.reduce((s,m)=>s+m.errors,0)};
+  return {markets:markets, types:byType, contexts:byContext,
+          total:markets.reduce((s,m)=>s+m.errors,0)};
 }
 
 // The tours feed spells months inconsistently — "Mar-26" on most rows but
@@ -779,11 +890,10 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
       }).join('');
   }
 
-  const sum = document.getElementById(cfg.summary);
-  if(sum){
-    // Distinct tours, never a sum of per-market counts.
-    let denom = HISTORIC_TOURS_MONITORED[cfg.period];
-    let basis = 'tours monitored';
+  // Distinct tours, never a sum of per-market counts.
+  let denom = HISTORIC_TOURS_MONITORED[cfg.period];
+  let basis = 'tours monitored';
+  {
     if(denom === undefined){
       if(LIVE_TOURS_MONITORED !== null){
         denom = LIVE_TOURS_MONITORED;
@@ -797,6 +907,10 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
         basis = 'tours with logged errors';
       }
     }
+  }
+
+  const sum = document.getElementById(cfg.summary);
+  if(sum){
     const per = denom ? (agg.total/denom).toFixed(2) : '\u2014';
     let text = denom
       ? `${agg.total} errors across ${denom} ${basis} · ${per} per tour`
@@ -808,6 +922,11 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
     }
     sum.textContent = text;
   }
+
+  const strip = document.getElementById('acc-stats-'
+    + (panelKey === 'jan-mar' ? 'jm' : panelKey === 'apr-may' ? 'am' : 'jun'));
+  if(strip) strip.innerHTML = accStatStrip(cfg.period, agg, denom, basis);
+
   return agg;
 }
 
@@ -823,6 +942,7 @@ function parseLiveErrors(rows){
   const h = rows[head].map(c => (c||'').trim().toLowerCase());
   const iM = h.indexOf('market'), iT = h.indexOf('error type'), iP = h.indexOf('period');
   const iTour = h.indexOf('tour name');
+  const iCtx = h.indexOf('error context');
   const out = [];
   for(let r = head+1; r < rows.length; r++){
     const market = (rows[r][iM] || '').trim();
@@ -830,7 +950,8 @@ function parseLiveErrors(rows){
     if(!market || !type) continue;
     // The live tab is one row per occurrence, so each row counts as 1.
     const tour = iTour >= 0 ? (rows[r][iTour]||'').trim() : '';
-    out.push([iP >= 0 ? (rows[r][iP]||'').trim() : 'live', market, type, 1, tour]);
+    const ctx = iCtx >= 0 ? (rows[r][iCtx]||'').trim() : '';
+    out.push([iP >= 0 ? (rows[r][iP]||'').trim() : 'live', market, type, 1, tour, ctx]);
   }
   return out;
 }
@@ -846,6 +967,7 @@ function renderLivePanel(marketByMonth){
   if(empty) empty.style.display = 'none';
   if(content) content.style.display = '';
   renderAccuracyPanel('jun', LIVE_ERRORS, marketByMonth);
+  renderAccuracyTrend();
 }
 
 // Counts tours on the "Tour index" tab, but ONLY those whose sheet actually has
@@ -900,6 +1022,7 @@ function buildAccuracyCharts(marketByMonth){
   renderAccuracyPanel('jan-mar', HISTORIC_ERRORS.filter(r => r[0] === 'Feb-Mar 2026'), ACC_MARKET_BY_MONTH);
   renderAccuracyPanel('apr-may', HISTORIC_ERRORS.filter(r => r[0] === 'Apr-May 2026'), ACC_MARKET_BY_MONTH);
   renderLivePanel(ACC_MARKET_BY_MONTH);
+  renderAccuracyTrend();
 }
 
 
