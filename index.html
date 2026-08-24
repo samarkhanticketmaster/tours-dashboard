@@ -483,6 +483,22 @@ function parseCSV(text){
   return rows;
 }
 
+// The tours feed spells months inconsistently: mostly "Apr-26", but some rows
+// say "April-26", "March-26" or "June-26". The charts only recognised the short
+// form, so those rows were silently dropped — that was 10 tours missing from the
+// monthly chart and April reading zero. Map every spelling to "Apr-26" form.
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function canonicalMonth(label){
+  const raw = String(label || '').trim();
+  const m = raw.toLowerCase().match(/^([a-z]+)[\s\-\/]+(\d{2,4})$/);
+  if(!m) return raw;
+  const i = MONTH_ABBR.findIndex(a => a.toLowerCase() === m[1].slice(0,3));
+  if(i === -1) return raw;
+  const yr = m[2].length > 2 ? m[2].slice(-2) : m[2];
+  return MONTH_ABBR[i] + '-' + yr;
+}
+
 function normaliseOffer(o){
   const t = o.trim();
   if(!t) return '';
@@ -525,7 +541,7 @@ function rowsToTours(rows){
     tours.push({
       name: r[idx.tour].trim(),
       markets: splitLines(r[idx.markets]),
-      month: (r[idx.month]||'').trim(),
+      month: canonicalMonth((r[idx.month]||'').trim()),
       level: parseInt(lvlRaw)||0,
       offers: splitCommas(r[idx.offers]).map(normaliseOffer).filter(Boolean),
       promoter: idx.promoter>=0 ? (r[idx.promoter]||'').trim() : '',
