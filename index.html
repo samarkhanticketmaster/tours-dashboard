@@ -95,7 +95,8 @@ tr:last-child td { border-bottom: none; }
     <div class="mc" id="overview-kpis"></div>
     <div class="card">
       <div class="ct">Monthly tour volume — 2026</div>
-      <div class="cd">Total tours announced per month, 2026</div>
+      <div class="cd" id="monthly-sub">Tours per month, 2026</div>
+      <div class="lg" id="monthly-legend"></div>
       <div style="position:relative;width:100%;height:260px;"><canvas id="c-monthly"></canvas></div>
     </div>
     <div class="card">
@@ -111,9 +112,10 @@ tr:last-child td { border-bottom: none; }
       <div id="marketer-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
     </div>
     <div class="card">
-      <div class="ct">Top 10 Promoters — 2026</div>
-      <div class="cd">Tours by Primary Client Partner · top 10, everyone else grouped as Other</div>
-      <div style="position:relative;width:100%;height:420px;"><canvas id="c-promoters"></canvas></div>
+      <div class="ct">Promoters — 2026</div>
+      <div class="cd" id="promoter-sub">Tours by promoter · individual client partners rolled up to their company</div>
+      <div style="position:relative;width:100%;height:200px;"><canvas id="c-promoters"></canvas></div>
+      <div id="promoter-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
     </div>
   </div>
 
@@ -512,6 +514,42 @@ function canonicalMonth(label){
   return MONTH_ABBR[i] + '-' + yr;
 }
 
+// Is a month label history or pipeline? The current month counts as planned,
+// because it hasn't finished — so "announced" only ever means months that are
+// fully in the past. This rolls forward on its own: in September, August
+// becomes announced without anyone editing anything.
+function monthIsAnnounced(label){
+  const m = String(label || '').match(/^([A-Za-z]{3})-(\d{2})$/);
+  if(!m) return true;
+  const idx = MONTH_ABBR.indexOf(m[1]);
+  if(idx === -1) return true;
+  const year = 2000 + parseInt(m[2], 10);
+  const now = new Date();
+  if(year !== now.getFullYear()) return year < now.getFullYear();
+  return idx < now.getMonth();
+}
+
+// Known promoter families. A value like "Live Nation - Hans Schafer" or
+// "Live Nation EMEA Touring" is the same promoter; anything unrecognised keeps
+// its own name rather than being silently bucketed, so a new promoter shows up.
+const PROMOTER_GROUPS = [
+  {test:/^live nation/i, name:'Live Nation'},
+  {test:/^aeg/i,         name:'AEG'},
+  {test:/^dice/i,        name:'DICE'},
+  {test:/^sjm/i,         name:'SJM'},
+  {test:/^kilimanjaro/i, name:'Kilimanjaro'},
+  {test:/^academy/i,     name:'Academy Events'}
+];
+
+function promoterCompany(raw){
+  const v = String(raw || '').trim();
+  if(!v) return 'Not specified';
+  for(const g of PROMOTER_GROUPS) if(g.test.test(v)) return g.name;
+  // "Something - Person" -> "Something". Otherwise use it as-is.
+  const dash = v.split(' - ')[0].trim();
+  return dash || v;
+}
+
 function normaliseOffer(o){
   const t = o.trim();
   if(!t) return '';
@@ -551,11 +589,17 @@ function rowsToTours(rows){
     const r = rows[i];
     if(!r || idx.tour<0 || !r[idx.tour] || !r[idx.tour].trim()) continue;
     const lvlRaw = (r[idx.level]||'').replace(/[^0-9]/g,'');
+    // Only Levels 1-3 are marketed. A Level 4 tour would otherwise count in
+    // the totals and market charts while being absent from the level charts,
+    // so totals wouldn't reconcile. There are none in 2026 today; this stops
+    // one appearing later and quietly skewing the numbers.
+    const lvlNum = parseInt(lvlRaw) || 0;
+    if(lvlNum < 1 || lvlNum > 3) continue;
     tours.push({
       name: r[idx.tour].trim(),
       markets: splitLines(r[idx.markets]),
       month: canonicalMonth((r[idx.month]||'').trim()),
-      level: parseInt(lvlRaw)||0,
+      level: lvlNum,
       offers: splitCommas(r[idx.offers]).map(normaliseOffer).filter(Boolean),
       promoter: idx.promoter>=0 ? (r[idx.promoter]||'').trim() : '',
     });
@@ -1207,12 +1251,63 @@ function build(RAW_TOURS, M){
     <div class="mv"><div class="ml">Top Offer Type</div><div class="mn" style="font-size:18px;margin-top:4px;">${topOffer[0]}</div><div class="badge bg">${topOffer[1]} tours</div></div>
   `;
 
+  // Announced and planned looked identical, so 12 tours in September read the
+  // same as 12 in March. Solid is history, pale is pipeline, with a line at today.
+  const ANNOUNCED_COLOUR = '#378ADD', PLANNED_COLOUR = '#B5D4F4';
+  const monthFlags = MONTHS.map(monthIsAnnounced);
+  const firstPlanned = monthFlags.indexOf(false);
+
+  const announcedTotal = MONTHS.reduce((s,m,i)=> s + (monthFlags[i] ? (monthlyCounts[m]||0) : 0), 0);
+  const plannedTotal   = MONTHS.reduce((s,m,i)=> s + (monthFlags[i] ? 0 : (monthlyCounts[m]||0)), 0);
+
+  const todayLine = {
+    id:'todayLine',
+    afterDatasetsDraw(chart){
+      if(firstPlanned <= 0) return;
+      const x = chart.scales.x, y = chart.scales.y;
+      const px = x.getPixelForTick(firstPlanned) - (x.width / MONTHS.length) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.setLineDash([4,4]); c.lineWidth = 1; c.strokeStyle = '#999';
+      c.beginPath(); c.moveTo(px, y.top); c.lineTo(px, y.bottom); c.stroke();
+      c.setLineDash([]);
+      c.fillStyle = '#999'; c.font = '10px ' + BF.family; c.textAlign = 'left';
+      c.fillText('today', px + 4, y.top + 10);
+      c.restore();
+    }
+  };
+
   CHARTS.monthly = new Chart(document.getElementById('c-monthly'),{
     type:'bar',
-    data:{labels:MONTHS, datasets:[{data:MONTHS.map(m=>monthlyCounts[m]),backgroundColor:'#378ADD',borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{grid:{display:false},ticks:{font:BF,color:TC}},y:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true}}}
+    data:{labels:MONTHS, datasets:[{
+      data:MONTHS.map(m=>monthlyCounts[m]),
+      backgroundColor:monthFlags.map(a => a ? ANNOUNCED_COLOUR : PLANNED_COLOUR),
+      borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>
+        ' ' + ctx.raw + ' tours \u00b7 ' + (monthFlags[ctx.dataIndex] ? 'announced' : 'planned')}}},
+      scales:{x:{grid:{display:false},ticks:{font:BF,color:TC}},y:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true}}},
+    plugins:[todayLine]
   });
+
+  const mLegend = document.getElementById('monthly-legend');
+  if(mLegend){
+    const span = (from,to) => from === to ? from : from + '\u2013' + to;
+    const announcedMonths = MONTHS.filter((m,i)=>monthFlags[i]).map(m=>m.slice(0,3));
+    const plannedMonths = MONTHS.filter((m,i)=>!monthFlags[i]).map(m=>m.slice(0,3));
+    let html = '';
+    if(announcedMonths.length) html += '<span><span class="ls" style="background:' + ANNOUNCED_COLOUR
+      + '"></span>Announced (' + span(announcedMonths[0], announcedMonths[announcedMonths.length-1])
+      + ') ' + announcedTotal + '</span>';
+    if(plannedMonths.length) html += '<span><span class="ls" style="background:' + PLANNED_COLOUR
+      + '"></span>Planned (' + span(plannedMonths[0], plannedMonths[plannedMonths.length-1])
+      + ') ' + plannedTotal + '</span>';
+    mLegend.innerHTML = html;
+  }
+
+  const mSub = document.getElementById('monthly-sub');
+  if(mSub) mSub.textContent = 'Tours per month, 2026 \u00b7 solid is announced, '
+    + 'pale is planned in Airtable and not yet confirmed';
 
   const OFFER_COLORS = ['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A','#639922','#F5A623','#185FA5','#B5D4F4','#A32D2D','#3B6D11','#854F0B','#C98BDB','#2BB0C7','#D98CAE','#8C6D4F','#5B8DEF','#AAB74F','#666666'];
 
@@ -1233,19 +1328,40 @@ function build(RAW_TOURS, M){
               y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
   });
 
-  const promoterEntries = Object.entries(promoterCounts||{}).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
-  const promoterTop = promoterEntries.slice(0,10);
-  const promoterRest = promoterEntries.slice(10).reduce((s,e)=>s+e[1],0);
-  const promoterLabels = promoterTop.map(e=>e[0]);
-  const promoterData = promoterTop.map(e=>e[1]);
-  if(promoterRest>0){ promoterLabels.push('Other'); promoterData.push(promoterRest); }
+  // Primary Client Partner holds a named individual ("Live Nation - Hans
+  // Schafer"), not a promoter, so the old top-10 was really a list of contacts
+  // with 46% of tours hidden in "Other". Roll each contact up to their company.
+  const promoterGroups = Object.entries(promoterCounts||{}).reduce((acc,[raw,n])=>{
+    const g = promoterCompany(raw);
+    acc[g] = (acc[g]||0) + n;
+    return acc;
+  },{});
+  const promoterEntries = Object.entries(promoterGroups)
+    .sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+  const promoterTotal = promoterEntries.reduce((s,e)=>s+e[1],0);
   const promoterEl = document.getElementById('c-promoters');
-  if(promoterEl && promoterLabels.length){
+
+  if(promoterEl && promoterEntries.length){
     CHARTS.promoters = new Chart(promoterEl,{
-      type:'doughnut',
-      data:{labels:promoterLabels,datasets:[{data:promoterData,backgroundColor:promoterLabels.map((o,i)=>OFFER_COLORS[i%OFFER_COLORS.length]),borderWidth:2,borderColor:'#fff'}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:BF.family,size:11},color:TC,padding:8,boxWidth:12}}}}
+      type:'bar',
+      data:{labels:promoterEntries.map(e=>e[0]),datasets:[{
+        data:promoterEntries.map(e=>e[1]),backgroundColor:'#378ADD',borderRadius:4}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>
+          ' ' + ctx.raw + ' tours (' + Math.round(ctx.raw/promoterTotal*100) + '%)'}}},
+        scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true,
+                   title:{display:true,text:'tours',font:{family:BF.family,size:10},color:TC}},
+                y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
     });
+  }
+
+  const pNote = document.getElementById('promoter-note');
+  if(pNote && promoterEntries.length){
+    const top = promoterEntries[0];
+    const contacts = Object.keys(promoterCounts||{}).length;
+    pNote.textContent = top[0] + ' accounts for ' + Math.round(top[1]/promoterTotal*100)
+      + '% of tours \u00b7 ' + contacts + ' named client partners across '
+      + promoterEntries.length + ' ' + (promoterEntries.length === 1 ? 'promoter' : 'promoters');
   }
 
   const mktMonthly = {};
