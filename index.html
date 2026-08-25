@@ -1260,19 +1260,38 @@ function build(RAW_TOURS, M){
   const announcedTotal = MONTHS.reduce((s,m,i)=> s + (monthFlags[i] ? (monthlyCounts[m]||0) : 0), 0);
   const plannedTotal   = MONTHS.reduce((s,m,i)=> s + (monthFlags[i] ? 0 : (monthlyCounts[m]||0)), 0);
 
+  // Place the line at the real point in the month rather than on a month
+  // boundary — on the 25th, a line sitting to the left of August reads as if
+  // August hasn't started. It sits proportionally inside the current bar.
+  const nowDate = new Date();
+  const currentLabel = MONTH_ABBR[nowDate.getMonth()] + '-' + String(nowDate.getFullYear()).slice(-2);
+  const currentIdx = MONTHS.indexOf(currentLabel);
+  const daysThisMonth = new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 0).getDate();
+  const throughMonth = (nowDate.getDate() - 0.5) / daysThisMonth;
+  const todayLabel = nowDate.getDate() + ' ' + MONTH_ABBR[nowDate.getMonth()];
+
   const todayLine = {
     id:'todayLine',
     afterDatasetsDraw(chart){
-      if(firstPlanned <= 0) return;
+      if(currentIdx < 0) return;
       const x = chart.scales.x, y = chart.scales.y;
-      const px = x.getPixelForTick(firstPlanned) - (x.width / MONTHS.length) / 2;
+      const catW = x.width / MONTHS.length;
+      const px = (x.getPixelForTick(currentIdx) - catW / 2) + throughMonth * catW;
       const c = chart.ctx;
       c.save();
-      c.setLineDash([4,4]); c.lineWidth = 1; c.strokeStyle = '#999';
+      c.setLineDash([3,3]); c.lineWidth = 1; c.strokeStyle = '#8a8a82';
       c.beginPath(); c.moveTo(px, y.top); c.lineTo(px, y.bottom); c.stroke();
       c.setLineDash([]);
-      c.fillStyle = '#999'; c.font = '10px ' + BF.family; c.textAlign = 'left';
-      c.fillText('today', px + 4, y.top + 10);
+      c.font = '10px ' + BF.family;
+      const label = 'today \u00b7 ' + todayLabel;
+      const w = c.measureText(label).width;
+      // Flip the label to the left if it would run off the right edge.
+      const flip = px + w + 8 > x.right;
+      c.fillStyle = '#fff';
+      c.fillRect(flip ? px - w - 6 : px + 4, y.top + 1, w + 2, 12);
+      c.fillStyle = '#8a8a82';
+      c.textAlign = flip ? 'right' : 'left';
+      c.fillText(label, flip ? px - 5 : px + 5, y.top + 10);
       c.restore();
     }
   };
