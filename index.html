@@ -172,13 +172,14 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="card">
       <div class="ct">Tours by level, per market</div>
-      <div class="cd">Each market's % split by level · number on the right = total tours (2026)</div>
-      <div class="lg">
-        <span><span class="ls" style="background:#185FA5;"></span>Level 1</span>
-        <span><span class="ls" style="background:#378ADD;"></span>Level 2</span>
-        <span><span class="ls" style="background:#B5D4F4;"></span>Level 3</span>
+      <div class="cd" id="lvlheat-sub">Tour counts by level · 2026</div>
+      <div class="acc-period-toggle" style="margin-bottom:14px;">
+        <button class="pbtn on" onclick="switchLevelHeat(this,'mix')">Market mix</button>
+        <button class="pbtn" onclick="switchLevelHeat(this,'vsavg')">vs EMEA average</button>
       </div>
+      <div class="lg" id="lvlheat-legend"></div>
       <div id="c-level-market"></div>
+      <div id="lvlheat-note" style="font-size:12px;color:#999;margin-top:10px;"></div>
     </div>
     <div class="card">
       <div class="ct">Top market pairings</div>
@@ -824,6 +825,131 @@ function promoterCompany(raw){
   // "Something - Person" -> "Something". Otherwise use it as-is.
   const dash = v.split(' - ')[0].trim();
   return dash || v;
+}
+
+// Markets with fewer than this many tours don't get a percentage or a
+// comparison against the average — the sample is too small to mean anything.
+const LEVEL_MIN_SAMPLE = 5;
+let LEVEL_BY_MARKET = null;
+let LEVEL_HEAT_VIEW = 'mix';
+
+const LEVEL_BLUES = ['#E6F1FB','#B5D4F4','#85B7EB','#378ADD','#185FA5'];
+const LEVEL_REDS  = ['#FCEBEB','#F7C1C1','#F09595','#E24B4A','#A32D2D'];
+const LEVEL_GREY  = '#f0efec';
+
+function switchLevelHeat(btn, view){
+  LEVEL_HEAT_VIEW = view;
+  if(btn){
+    btn.parentNode.querySelectorAll('.pbtn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  renderLevelHeat();
+}
+
+function renderLevelHeat(){
+  const data = LEVEL_BY_MARKET;
+  const host = document.getElementById('c-level-market');
+  if(!host || !data) return;
+
+  const totalOf = m => data[m][1] + data[m][2] + data[m][3];
+  const markets = Object.keys(data).sort((a,b) => totalOf(b) - totalOf(a) || a.localeCompare(b));
+
+  // EMEA-wide share of each level, for the comparison view.
+  const colTotals = [1,2,3].map(l => markets.reduce((s,m) => s + data[m][l], 0));
+  const grand = colTotals.reduce((a,b) => a+b, 0);
+  const avg = colTotals.map(c => grand ? c/grand : 0);
+
+  const cell = (market, level) => {
+    const v = data[market][level];
+    const t = totalOf(market);
+
+    if(LEVEL_HEAT_VIEW === 'mix'){
+      const share = t ? v/t : 0;
+      const b = v === 0 ? -1 : share < 0.15 ? 0 : share < 0.3 ? 1 : share < 0.45 ? 2 : share < 0.6 ? 3 : 4;
+      const bg = b < 0 ? 'transparent' : LEVEL_BLUES[b];
+      const fg = b >= 3 ? '#fff' : (b < 0 ? '#bbb' : '#0C447C');
+      const title = t ? market + ' Level ' + level + ': ' + v + ' of ' + t + ' tours'
+                        + (t >= LEVEL_MIN_SAMPLE ? ' (' + Math.round(share*100) + '%)' : '') : '';
+      return '<div title="' + title + '" style="height:26px;border-radius:4px;display:flex;'
+        + 'align-items:center;justify-content:center;font-size:11px;background:' + bg
+        + ';color:' + fg + ';border:' + (b < 0 ? '1px solid #e8e8e0' : 'none') + '">'
+        + (v || '') + '</div>';
+    }
+
+    // vs EMEA average
+    if(t < LEVEL_MIN_SAMPLE){
+      return '<div title="' + market + ': only ' + t + ' tours, too few to compare"'
+        + ' style="height:26px;border-radius:4px;display:flex;align-items:center;'
+        + 'justify-content:center;font-size:11px;background:' + LEVEL_GREY + ';color:#999">n&lt;'
+        + LEVEL_MIN_SAMPLE + '</div>';
+    }
+    const diff = (v/t) - avg[level-1];
+    const pp = Math.round(diff*100);
+    const mag = Math.abs(diff);
+    const b = mag < 0.05 ? -1 : mag < 0.10 ? 1 : mag < 0.20 ? 2 : mag < 0.30 ? 3 : 4;
+    const bg = b < 0 ? LEVEL_GREY : (diff > 0 ? LEVEL_BLUES[b] : LEVEL_REDS[b]);
+    const fg = b >= 3 ? '#fff' : (b < 0 ? '#999' : (diff > 0 ? '#0C447C' : '#A32D2D'));
+    return '<div title="' + market + ' Level ' + level + ': ' + Math.round(v/t*100)
+      + '% against an EMEA average of ' + Math.round(avg[level-1]*100) + '%"'
+      + ' style="height:26px;border-radius:4px;display:flex;align-items:center;'
+      + 'justify-content:center;font-size:11px;background:' + bg + ';color:' + fg + '">'
+      + (b < 0 ? '\u2014' : (pp > 0 ? '+' : '') + pp) + '</div>';
+  };
+
+  let html = '<div style="display:grid;grid-template-columns:110px repeat(3,1fr) 44px;gap:3px;align-items:center">'
+    + '<div></div>'
+    + [1,2,3].map(l => '<div style="font-size:11px;color:#999;text-align:center">Level ' + l + '</div>').join('')
+    + '<div style="font-size:11px;color:#999;text-align:right">all</div>';
+
+  markets.forEach(m => {
+    html += '<div style="font-size:12px;color:#2c2c2a;text-align:right;padding-right:8px;white-space:nowrap">'
+      + m + '</div>'
+      + [1,2,3].map(l => cell(m, l)).join('')
+      + '<div style="font-size:12px;color:#888;text-align:right;padding-left:8px">' + totalOf(m) + '</div>';
+  });
+  host.innerHTML = html + '</div>';
+
+  const legend = document.getElementById('lvlheat-legend');
+  if(legend){
+    const sw = c => '<span class="ls" style="background:' + c + '"></span>';
+    legend.innerHTML = LEVEL_HEAT_VIEW === 'mix'
+      ? '<span>' + sw(LEVEL_BLUES[0]) + 'under 15% of the market</span>'
+        + '<span>' + sw(LEVEL_BLUES[2]) + '30\u201345%</span>'
+        + '<span>' + sw(LEVEL_BLUES[4]) + 'over 60%</span>'
+      : '<span>' + sw(LEVEL_REDS[3]) + 'below average</span>'
+        + '<span>' + sw(LEVEL_GREY) + 'typical, or too few tours</span>'
+        + '<span>' + sw(LEVEL_BLUES[3]) + 'above average</span>';
+  }
+
+  const sub = document.getElementById('lvlheat-sub');
+  if(sub){
+    sub.textContent = LEVEL_HEAT_VIEW === 'mix'
+      ? 'Number is the tour count, shading is that market\u2019s own split across levels'
+      : 'Percentage points above or below the EMEA average for that level'
+        + ' (L1 ' + Math.round(avg[0]*100) + '%, L2 ' + Math.round(avg[1]*100) + '%, L3 '
+        + Math.round(avg[2]*100) + '%)';
+  }
+
+  // Call out the genuinely unusual markets, which the old format buried.
+  const note = document.getElementById('lvlheat-note');
+  if(note){
+    const findings = [];
+    markets.forEach(m => {
+      const t = totalOf(m);
+      if(t < LEVEL_MIN_SAMPLE) return;
+      [1,2,3].forEach(l => {
+        const diff = (data[m][l]/t) - avg[l-1];
+        if(diff >= 0.15) findings.push(m + ' is ' + Math.round(data[m][l]/t*100)
+          + '% Level ' + l + ', well above the EMEA average');
+      });
+    });
+    const small = markets.filter(m => totalOf(m) < LEVEL_MIN_SAMPLE);
+    let txt = 'Covers all of 2026, including tours not yet announced.';
+    if(small.length) txt += ' ' + small.join(', ') + ' have under '
+      + LEVEL_MIN_SAMPLE + ' tours, so no percentage is shown for them.';
+    if(findings.length) txt += ' ' + findings.slice(0,3).join('. ') + '.';
+    note.textContent = txt;
+  }
 }
 
 function normaliseOffer(o){
@@ -1670,6 +1796,31 @@ function build(RAW_TOURS, M){
     });
     return Object.entries(out).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
   }
+  // The top markets are within a tour or two of each other, so the bars look
+  // identical and you can't read a value off them. That's what made the
+  // disagreement with the level chart invisible. Print the number on each bar.
+  const barValues = {
+    id:'barValues',
+    afterDatasetsDraw(chart){
+      const meta = chart.getDatasetMeta(0);
+      const c = chart.ctx;
+      c.save();
+      c.font = '11px ' + BF.family;
+      c.textBaseline = 'middle';
+      meta.data.forEach((bar,i) => {
+        const v = chart.data.datasets[0].data[i];
+        if(v == null) return;
+        const room = chart.scales.x.right - bar.x;
+        // Sit inside the bar if there's no space to the right of it.
+        const inside = room < 22;
+        c.fillStyle = inside ? '#fff' : '#666';
+        c.textAlign = inside ? 'right' : 'left';
+        c.fillText(String(v), inside ? bar.x - 6 : bar.x + 6, bar.y);
+      });
+      c.restore();
+    }
+  };
+
   function drawToggle(p){
     const sorted = periodTotals(p);
     const labels = sorted.map(e=>e[0]), vals = sorted.map(e=>e[1]);
@@ -1677,9 +1828,13 @@ function build(RAW_TOURS, M){
     CHARTS.marketsToggle = new Chart(document.getElementById('c-markets-toggle'),{
       type:'bar',
       data:{labels,datasets:[{data:vals,backgroundColor:'#378ADD',borderRadius:4}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        layout:{padding:{right:26}},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>
+          ' ' + ctx.raw + ' ' + (ctx.raw === 1 ? 'tour' : 'tours')}}},
         scales:{x:{min:0,grid:{color:GC},ticks:{precision:0,font:BF,color:TC}},
-          y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+          y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}},
+      plugins:[barValues]
     });
   }
   drawToggle('year');
@@ -1697,22 +1852,12 @@ function build(RAW_TOURS, M){
     if(!levelByMarket[mk]) levelByMarket[mk] = {1:0,2:0,3:0};
     levelByMarket[mk][t.level]++;
   }));
-  const lvlMarkets = Object.keys(levelByMarket).sort((a,b)=>{
-    const ta=levelByMarket[a][1]+levelByMarket[a][2]+levelByMarket[a][3];
-    const tb=levelByMarket[b][1]+levelByMarket[b][2]+levelByMarket[b][3];
-    return tb-ta;
-  });
-  const lmCols=['#185FA5','#378ADD','#B5D4F4'], lmTxt=['#fff','#fff','#0C447C'];
-  const lmHtml = lvlMarkets.map(m=>{
-    const v=levelByMarket[m], t=v[1]+v[2]+v[3];
-    const seg=(l)=>{const p=t?v[l]/t*100:0;const r=Math.round(p);return `<div style="width:${p}%;background:${lmCols[l-1]};color:${lmTxt[l-1]};font-size:11px;display:flex;align-items:center;justify-content:center;overflow:hidden;">${p>=8?r+'%':''}</div>`;};
-    return `<div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:110px;font-size:12px;text-align:right;flex-shrink:0;color:#2c2c2a;">${m}</div>
-      <div style="flex:1;display:flex;height:24px;border-radius:4px;overflow:hidden;">${seg(1)}${seg(2)}${seg(3)}</div>
-      <div style="width:30px;text-align:right;font-size:12px;color:#888;flex-shrink:0;">${t}</div>
-    </div>`;
-  }).join('');
-  document.getElementById('c-level-market').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">${lmHtml}</div>`;
+  // 100% stacked bars deleted volume: UAE with 1 tour carried the same visual
+  // weight as the UK with 70, and "100% Level 2" on 4 tours read as a finding.
+  // A heatmap of counts keeps the real numbers and never prints a percentage
+  // for a market too small to support one.
+  LEVEL_BY_MARKET = levelByMarket;
+  renderLevelHeat();
 
   const pairCounts = {};
   RAW_TOURS.forEach(t => {
