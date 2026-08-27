@@ -183,9 +183,13 @@ tr:last-child td { border-bottom: none; }
       <div id="lvlheat-note" style="font-size:12px;color:#999;margin-top:10px;"></div>
     </div>
     <div class="card">
-      <div class="ct">Top market pairings</div>
-      <div class="cd">Markets that most often appear together in a tour's routing — top 10</div>
+      <div class="ct">Markets most often routed alone</div>
+      <div class="cd">Share of each market's tours where it was the only market on the routing.
+        A high share means one-off shows rather than tours passing through, which may need
+        different support.</div>
+      <div class="cd" id="pairings-period" style="margin-top:-6px;"></div>
       <div id="pairings-container"></div>
+      <div id="pairings-note" style="font-size:12px;color:#999;margin-top:10px;"></div>
     </div>
   </div>
 
@@ -1877,31 +1881,85 @@ function build(RAW_TOURS, M){
   LEVEL_BY_MARKET = levelByMarket;
   renderLevelHeat();
 
-  const pairCounts = {};
+  // For each market: how many of its tours had no other market on them, and how
+  // many other markets it typically shares a routing with.
+  const soloStats = {};
   RAW_TOURS.forEach(t => {
-    const mkts = [...new Set(t.markets.map(m=>m.trim()).filter(Boolean))].sort();
-    for(let i=0;i<mkts.length;i++){
-      for(let j=i+1;j<mkts.length;j++){
-        const key = mkts[i]+' + '+mkts[j];
-        pairCounts[key] = (pairCounts[key]||0)+1;
-      }
+    const mkts = [...new Set(t.markets.map(m=>m.trim()).filter(Boolean))];
+    mkts.forEach(mk => {
+      if(!soloStats[mk]) soloStats[mk] = {tours:0, solo:0, coMarkets:0};
+      soloStats[mk].tours++;
+      soloStats[mk].coMarkets += mkts.length - 1;
+      if(mkts.length === 1) soloStats[mk].solo++;
+    });
+  });
+
+  const soloRanked = Object.keys(soloStats)
+    .filter(mk => soloStats[mk].tours >= LEVEL_MIN_SAMPLE)
+    .map(mk => {
+      const s = soloStats[mk];
+      return {market:mk, tours:s.tours, solo:s.solo,
+              share:s.solo/s.tours, avgCo:s.coMarkets/s.tours};
+    })
+    .sort((a,b) => b.share - a.share || b.solo - a.solo || a.market.localeCompare(b.market));
+
+  const soloSmall = Object.keys(soloStats)
+    .filter(mk => soloStats[mk].tours < LEVEL_MIN_SAMPLE)
+    .sort((a,b) => soloStats[b].tours - soloStats[a].tours);
+
+  const pairHost = document.getElementById('pairings-container');
+  if(pairHost){
+    if(!soloRanked.length){
+      pairHost.innerHTML = '<div style="font-size:12px;color:#999;">'
+        + 'No market has enough tours yet to show this.</div>';
+    } else {
+      // Scale bars against the highest share so the differences are visible.
+      const maxShare = Math.max(...soloRanked.map(r => r.share)) || 1;
+      pairHost.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;">'
+        + soloRanked.map(r => {
+          const pct = Math.round(r.share*100);
+          const width = Math.max(r.share/maxShare*100, r.solo ? 2 : 0);
+          const colour = r.share >= 0.3 ? '#E89B2A' : r.share > 0 ? '#7F77DD' : '#d8d8d0';
+          return '<div style="display:flex;align-items:center;gap:12px;" title="'
+            + r.market + ': ' + r.solo + ' of ' + r.tours + ' tours were solo \u00b7 '
+            + 'typically shares a routing with ' + r.avgCo.toFixed(1) + ' other markets">'
+            + '<div style="width:110px;font-size:12px;color:#2c2c2a;flex-shrink:0;text-align:right;">'
+            + r.market + '</div>'
+            + '<div style="flex:1;height:22px;background:#f1efe8;border-radius:6px;overflow:hidden;">'
+            + '<div style="height:100%;width:' + width + '%;background:' + colour
+            + ';border-radius:6px;"></div></div>'
+            + '<div style="width:88px;text-align:right;font-size:12px;color:#2c2c2a;flex-shrink:0;">'
+            + pct + '% <span style="color:#999;">(' + r.solo + ' of ' + r.tours + ')</span></div>'
+            + '</div>';
+        }).join('') + '</div>';
     }
-  });
-  const topPairs = Object.entries(pairCounts).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const maxPair = topPairs[0][1];
-  let pairHtml = '<div style="display:flex;flex-direction:column;gap:10px;">';
-  topPairs.forEach(([pair,count]) => {
-    const pct = Math.round(count/maxPair*100);
-    pairHtml += `<div style="display:flex;align-items:center;gap:12px;">
-      <div style="width:180px;font-size:13px;color:#2c2c2a;flex-shrink:0;">${pair}</div>
-      <div style="flex:1;height:22px;background:#f1efe8;border-radius:6px;overflow:hidden;">
-        <div style="height:100%;width:${pct}%;background:#7F77DD;border-radius:6px;"></div>
-      </div>
-      <div style="width:36px;text-align:right;font-size:13px;font-weight:500;color:#2c2c2a;">${count}</div>
-    </div>`;
-  });
-  pairHtml += '</div>';
-  document.getElementById('pairings-container').innerHTML = pairHtml;
+  }
+
+  const pairPeriod = document.getElementById('pairings-period');
+  if(pairPeriod){
+    pairPeriod.textContent = 'All of 2026, including tours not yet announced \u00b7 '
+      + 'markets with fewer than ' + LEVEL_MIN_SAMPLE + ' tours are left out';
+  }
+
+  const pairNote = document.getElementById('pairings-note');
+  if(pairNote){
+    const bits = [];
+    const standout = soloRanked.filter(r => r.share >= 0.3);
+    if(standout.length){
+      bits.push(standout.map(r => r.market + ' ' + Math.round(r.share*100) + '%').join(', ')
+        + ' are mostly standalone shows');
+    }
+    const routed = soloRanked.filter(r => r.solo === 0);
+    if(routed.length){
+      bits.push(routed.length + ' markets never appear alone, so they only ever '
+        + 'get tours that are already routing through');
+    }
+    if(soloSmall.length){
+      bits.push('Not shown: ' + soloSmall.map(mk => mk + ' (' + soloStats[mk].tours
+        + ')').join(', ') + ' \u2014 too few tours to read anything into');
+    }
+    pairNote.textContent = bits.join('. ') + (bits.length ? '.' : '');
+  }
 
   const offerLabels = Object.keys(offerCounts).sort((a,b)=>offerCounts[b]-offerCounts[a]);
   CHARTS.offers = new Chart(document.getElementById('c-offers'),{
