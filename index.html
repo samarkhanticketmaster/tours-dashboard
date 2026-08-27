@@ -153,6 +153,7 @@ tr:last-child td { border-bottom: none; }
     <div class="card">
       <div class="ct">Tours by market</div>
       <div class="cd">Select a month (or full year) to view tour volume per market</div>
+      <div class="cd" id="mktbar-period" style="margin-top:-6px;"></div>
       <div id="period-toggle" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
         <button data-p="year" class="pbtn on">Full year</button>
         <button data-p="0" class="pbtn">Jan</button>
@@ -1823,6 +1824,23 @@ function build(RAW_TOURS, M){
 
   function drawToggle(p){
     const sorted = periodTotals(p);
+
+    // State the period, and whether it includes tours nobody has announced yet.
+    const periodEl = document.getElementById('mktbar-period');
+    if(periodEl){
+      const shown = sorted.reduce((s,e)=>s+e[1],0);
+      if(p === 'year'){
+        const planned = MONTHS.reduce((s,m,i) =>
+          s + (monthIsAnnounced(m) ? 0 : (monthlyCounts[m] || 0)), 0);
+        periodEl.textContent = 'All of 2026 \u00b7 ' + shown + ' market entries across '
+          + totalTours + ' tours \u00b7 includes ' + planned
+          + ' tours planned in Airtable but not yet announced';
+      } else {
+        const label = MONTHS[Number(p)] || '';
+        periodEl.textContent = label + ' \u00b7 ' + shown + ' market entries \u00b7 '
+          + (monthIsAnnounced(label) ? 'announced' : 'planned, not yet announced');
+      }
+    }
     const labels = sorted.map(e=>e[0]), vals = sorted.map(e=>e[1]);
     if(CHARTS.marketsToggle) CHARTS.marketsToggle.destroy();
     CHARTS.marketsToggle = new Chart(document.getElementById('c-markets-toggle'),{
