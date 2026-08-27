@@ -1050,7 +1050,7 @@ function rowsToEngagement(rows){
 
 async function init(){
   try {
-    const res = await fetch(CSV_URL);
+    const res = await fetch('https://script.google.com/macros/s/AKfycbwjL4qBhjzPtg-tJfnbnpt1bnliF8cIFClB5oUyNUDN7r3cwNnGV9CAguiLfXLjZqGZQg/exec').then(r => r.ok ? r : Promise.reject(new Error('feed HTTP '+r.status))).catch(() => fetch(CSV_URL));
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text = await res.text();
     const rows = parseCSV(text);
