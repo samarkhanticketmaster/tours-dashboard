@@ -111,6 +111,34 @@ tr:last-child td { border-bottom: none; }
       <div style="position:relative;width:100%;height:300px;"><canvas id="c-marketers"></canvas></div>
       <div id="marketer-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
     </div>
+
+    <div class="card">
+      <div class="ct">Volume by month and marketer — 2026</div>
+      <div class="cd" id="mvol-sub">Who is carrying what, and when it lands</div>
+      <div class="lg" id="mvol-legend"></div>
+      <div style="position:relative;width:100%;height:300px;"><canvas id="c-mvol"></canvas></div>
+      <div id="mvol-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Offer types by marketer — 2026</div>
+      <div class="cd">Which offers each marketer has worked on</div>
+      <div class="acc-period-toggle" id="moff-buttons" style="margin-bottom:14px;"></div>
+      <div style="position:relative;width:100%;height:300px;"><canvas id="c-moff"></canvas></div>
+      <div id="moff-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">2025 vs 2026</div>
+      <div class="cd" id="cmp-sub">Same stretch of the calendar in both years</div>
+      <div class="acc-period-toggle" style="margin-bottom:14px;">
+        <button class="pbtn on" onclick="switchCompare(this,'levels')">Tour level</button>
+        <button class="pbtn" onclick="switchCompare(this,'offers')">Offer type</button>
+      </div>
+      <div class="lg" id="cmp-legend"></div>
+      <div style="position:relative;width:100%;height:320px;"><canvas id="c-compare"></canvas></div>
+      <div id="cmp-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
+    </div>
     <div class="card">
       <div class="ct">Promoters — 2026</div>
       <div class="cd" id="promoter-sub">Tours by promoter · individual client partners rolled up to their company</div>
@@ -378,6 +406,10 @@ const BF = {family:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',size
 const TC = '#666', GC = 'rgba(0,0,0,0.06)';
 const CHARTS = {};
 
+// Shared chart palette. Declared here rather than inside build() so the
+// charts that load later from Airtable can use it too.
+const OFFER_COLORS = ['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A','#639922','#F5A623','#185FA5','#B5D4F4','#A32D2D','#3B6D11','#854F0B','#C98BDB','#2BB0C7','#D98CAE','#8C6D4F','#5B8DEF','#AAB74F','#666666'];
+
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?output=csv';
 const ENGAGEMENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=981015315&single=true&output=csv';
 
@@ -392,6 +424,245 @@ const MARKETER_COLOURS = {
   'Daniel Kelly': '#1D9E75'
 };
 const MARKETER_FALLBACK = ['#E89B2A', '#D4537E', '#888780'];
+
+let MARKETER_DETAIL = null;
+let COMPARE_DATA = null;
+let COMPARE_VIEW = 'levels';
+let MOFF_SELECTED = 'All';
+
+// A month is provisional if it's the current month or later: those tours sit
+// with a default lead in Airtable until someone hands them over, so the
+// attribution isn't real yet. Shown, but visibly softer.
+function mvolProvisional(months, provisionalFrom){
+  const from = months.indexOf(provisionalFrom);
+  return months.map((m,i) => from >= 0 && i >= from);
+}
+
+function leadColour(name, i){
+  return MARKETER_COLOURS[name] || MARKETER_FALLBACK[i % MARKETER_FALLBACK.length];
+}
+
+function renderMarketerVolume(d){
+  const el = document.getElementById('c-mvol');
+  if(!el || !d) return;
+  const prov = mvolProvisional(d.months, d.provisionalFrom);
+
+  const datasets = d.leads.map((lead,i) => {
+    const base = leadColour(lead, i);
+    return {
+      label: lead,
+      data: d.months.map(m => (d.byMonth[m] || {})[lead] || 0),
+      // 8-digit hex: same colour, softer, for provisional months.
+      backgroundColor: prov.map(isProv => isProv ? base + '55' : base),
+      borderRadius: 3,
+      stack: 'tours'
+    };
+  });
+
+  if(CHARTS.mvol){ try{ CHARTS.mvol.destroy(); }catch(e){} }
+  CHARTS.mvol = new Chart(el, {
+    type:'bar',
+    data:{labels:d.months, datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:ctx => ' ' + ctx.dataset.label + ': ' + ctx.raw + ' tours',
+        afterBody:items => prov[items[0].dataIndex] ? ['assignment provisional'] : []
+      }}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:BF,color:TC}},
+              y:{stacked:true,grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true,
+                 title:{display:true,text:'tours',font:{family:BF.family,size:10},color:TC}}}}
+  });
+
+  const lg = document.getElementById('mvol-legend');
+  if(lg){
+    lg.innerHTML = d.leads.map((lead,i) =>
+      '<span><span class="ls" style="background:' + leadColour(lead,i) + '"></span>'
+      + lead + ' ' + (d.leadTotals[lead] || 0) + '</span>').join('')
+      + '<span><span class="ls" style="background:#cccccc"></span>paler = provisional</span>';
+  }
+
+  // Call out the busiest month, since spotting clustering is the whole point.
+  const note = document.getElementById('mvol-note');
+  if(note){
+    let peak = null;
+    d.months.forEach(m => {
+      const total = Object.values(d.byMonth[m] || {}).reduce((s,n)=>s+n,0);
+      if(total && (!peak || total > peak.total)) peak = {month:m, total:total};
+    });
+    let txt = d.total + ' tours across 2026';
+    if(peak) txt += ' \u00b7 busiest month is ' + peak.month + ' with ' + peak.total;
+    txt += ' \u00b7 months from ' + d.provisionalFrom
+         + ' are provisional, tours default to a lead until handed over';
+    note.textContent = txt;
+  }
+}
+
+function renderMarketerOffers(){
+  const d = MARKETER_DETAIL;
+  const el = document.getElementById('c-moff');
+  if(!el || !d) return;
+
+  // Sum across everyone, or just the selected person.
+  const counts = {};
+  const leads = MOFF_SELECTED === 'All' ? d.leads : [MOFF_SELECTED];
+  leads.forEach(lead => {
+    Object.entries(d.offersByLead[lead] || {}).forEach(([offer,n]) => {
+      counts[offer] = (counts[offer] || 0) + n;
+    });
+  });
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const total = entries.reduce((s,e)=>s+e[1],0);
+
+  if(CHARTS.moff){ try{ CHARTS.moff.destroy(); }catch(e){} }
+  const note = document.getElementById('moff-note');
+
+  if(!entries.length){
+    if(note) note.textContent = 'No offers recorded for ' + MOFF_SELECTED + '.';
+    return;
+  }
+
+  CHARTS.moff = new Chart(el, {
+    type:'pie',
+    data:{labels:entries.map(e=>e[0]),datasets:[{
+      data:entries.map(e=>e[1]),
+      backgroundColor:entries.map((e,i)=>OFFER_COLORS[i%OFFER_COLORS.length]),
+      borderColor:'#fff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{family:BF.family,size:11},color:TC,padding:8,boxWidth:12}},
+        tooltip:{callbacks:{label:ctx =>
+          ' ' + ctx.label + ': ' + ctx.raw + ' (' + Math.round(ctx.raw/total*100) + '%)'}}}}
+  });
+
+  if(note){
+    const tours = MOFF_SELECTED === 'All'
+      ? d.total
+      : (d.leadTotals[MOFF_SELECTED] || 0);
+    note.textContent = MOFF_SELECTED + ' \u00b7 ' + tours + ' tours carrying '
+      + total + ' offers across ' + entries.length + ' types'
+      + ' \u00b7 a tour can carry several';
+  }
+}
+
+function selectMarketerOffers(name){
+  MOFF_SELECTED = name;
+  document.querySelectorAll('#moff-buttons .pbtn').forEach(b => {
+    b.classList.toggle('on', b.getAttribute('data-lead') === name);
+  });
+  renderMarketerOffers();
+}
+
+function buildMarketerOfferButtons(d){
+  const wrap = document.getElementById('moff-buttons');
+  if(!wrap || !d) return;
+  const names = ['All'].concat(d.leads);
+  wrap.innerHTML = names.map(n =>
+    '<button class="pbtn' + (n === MOFF_SELECTED ? ' on' : '') + '" data-lead="'
+    + n + '">' + n + '</button>').join('');
+  wrap.querySelectorAll('.pbtn').forEach(b => {
+    b.addEventListener('click', () => selectMarketerOffers(b.getAttribute('data-lead')));
+  });
+}
+
+function switchCompare(btn, view){
+  COMPARE_VIEW = view;
+  document.querySelectorAll('.acc-period-toggle .pbtn').forEach(b=>{});
+  if(btn){
+    const sibs = btn.parentNode.querySelectorAll('.pbtn');
+    sibs.forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+  renderCompare();
+}
+
+function renderCompare(){
+  const d = COMPARE_DATA;
+  const el = document.getElementById('c-compare');
+  if(!el || !d) return;
+  const [prev, cur] = d.years;
+
+  let labels, series;
+  if(COMPARE_VIEW === 'levels'){
+    labels = d.levelOrder;
+    series = y => labels.map(l => (d.data[y].levels[l] || 0));
+  } else {
+    // Union of offers across both years, ordered by this year's volume.
+    const all = {};
+    d.years.forEach(y => Object.entries(d.data[y].offers).forEach(([o,n]) => {
+      all[o] = (all[o] || 0) + (y === cur ? n * 1000 : n);
+    }));
+    labels = Object.keys(all).sort((a,b) => all[b] - all[a]).slice(0, 8);
+    series = y => labels.map(o => (d.data[y].offers[o] || 0));
+  }
+
+  if(CHARTS.compare){ try{ CHARTS.compare.destroy(); }catch(e){} }
+  CHARTS.compare = new Chart(el, {
+    type:'bar',
+    data:{labels:labels, datasets:[
+      {label:String(prev), data:series(prev), backgroundColor:'#B4B2A9', borderRadius:4},
+      {label:String(cur),  data:series(cur),  backgroundColor:'#378ADD', borderRadius:4}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:ctx => ' ' + ctx.dataset.label + ': ' + ctx.raw + ' tours'}}},
+      scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC},beginAtZero:true,
+                 title:{display:true,text:'tours',font:{family:BF.family,size:10},color:TC}},
+              y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
+  });
+
+  const lg = document.getElementById('cmp-legend');
+  if(lg){
+    lg.innerHTML = '<span><span class="ls" style="background:#B4B2A9"></span>' + prev
+      + ' (' + d.data[prev].tours + ' tours)</span>'
+      + '<span><span class="ls" style="background:#378ADD"></span>' + cur
+      + ' (' + d.data[cur].tours + ' tours)</span>';
+  }
+
+  const sub = document.getElementById('cmp-sub');
+  if(sub) sub.textContent = d.throughLabel + ' in each year, so the comparison is like for like';
+
+  const note = document.getElementById('cmp-note');
+  if(note){
+    const diff = d.data[cur].tours - d.data[prev].tours;
+    const pct = d.data[prev].tours ? Math.round(diff / d.data[prev].tours * 100) : 0;
+    note.textContent = diff === 0
+      ? 'Tour volume is level year on year.'
+      : Math.abs(diff) + ' ' + (Math.abs(diff) === 1 ? 'tour' : 'tours')
+        + ' ' + (diff > 0 ? 'more' : 'fewer') + ' than this point last year ('
+        + (diff > 0 ? '+' : '') + pct + '%). Levels 1-3 only.';
+  }
+}
+
+async function loadMarketerExtras(){
+  if(!MARKETER_API_URL) return;
+  const sep = MARKETER_API_URL.indexOf('?') >= 0 ? '&' : '?';
+  try {
+    const res = await fetch(MARKETER_API_URL + sep + 'resource=marketer-detail');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if(d.error) throw new Error(d.error);
+    MARKETER_DETAIL = d;
+    renderMarketerVolume(d);
+    buildMarketerOfferButtons(d);
+    renderMarketerOffers();
+  } catch(e){
+    console.error('Marketer detail load error:', e);
+    const n = document.getElementById('mvol-note');
+    if(n) n.textContent = 'Could not load the monthly breakdown: ' + e.message;
+  }
+
+  try {
+    const res = await fetch(MARKETER_API_URL + sep + 'resource=compare');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if(d.error) throw new Error(d.error);
+    COMPARE_DATA = d;
+    renderCompare();
+  } catch(e){
+    console.error('Year comparison load error:', e);
+    const n = document.getElementById('cmp-note');
+    if(n) n.textContent = 'Could not load the year comparison: ' + e.message;
+  }
+}
 
 async function loadMarketerSplit(){
   const note = document.getElementById('marketer-note');
@@ -443,6 +714,11 @@ function renderMarketerSplit(data){
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      onClick: (evt, els) => {
+        if(!els.length) return;
+        const name = leads[els[0].index] && leads[els[0].index].lead;
+        if(name) selectMarketerOffers(name);
+      },
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: c =>
@@ -656,6 +932,7 @@ async function init(){
     buildAll(tours);
     loadAccuracyLive();
     loadMarketerSplit();
+    loadMarketerExtras();
     const meta = document.getElementById('live-status');
     if(meta) meta.textContent = 'Live · updated '+new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
   } catch(e){
@@ -1328,7 +1605,6 @@ function build(RAW_TOURS, M){
   if(mSub) mSub.textContent = 'Tours per month, 2026 \u00b7 solid is announced, '
     + 'pale is planned in Airtable and not yet confirmed';
 
-  const OFFER_COLORS = ['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A','#639922','#F5A623','#185FA5','#B5D4F4','#A32D2D','#3B6D11','#854F0B','#C98BDB','#2BB0C7','#D98CAE','#8C6D4F','#5B8DEF','#AAB74F','#666666'];
 
   // A tour can carry several offers, so these figures sum past 100%. A donut
   // implies exclusive slices of one whole, which was misreading the data —
