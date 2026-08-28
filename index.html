@@ -512,8 +512,17 @@ function renderMarketerOffers(){
   const counts = {};
   const leads = MOFF_SELECTED === 'All' ? d.leads : [MOFF_SELECTED];
   leads.forEach(lead => {
-    Object.entries(d.offersByLead[lead] || {}).forEach(([offer,n]) => {
-      counts[offer] = (counts[offer] || 0) + n;
+       Object.entries(d.offersByLead[lead] || {}).forEach(([offer,n]) => {
+      // Show only the four TM Music offers, and count Platinum and Debranded
+      // Platinum as one. Everything else is hidden from this chart.
+      const MOFF_KEEP = {
+        'platinum':'Platinum', 'debrandedplatinum':'Platinum',
+        'vippackages':'VIP Packages', 'tmrequest':'TM Request',
+        'artistsignup':'Artist Sign-Up', 'artistsignedup':'Artist Sign-Up', 'asu':'Artist Sign-Up'
+      };
+      const label = MOFF_KEEP[String(offer).toLowerCase().replace(/[^a-z]/g,'')];
+      if(!label) return;
+      counts[label] = (counts[label] || 0) + n;
     });
   });
   const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
