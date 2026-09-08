@@ -605,8 +605,17 @@ function renderCompare(){
     d.years.forEach(y => Object.entries(d.data[y].offers).forEach(([o,n]) => {
       all[o] = (all[o] || 0) + (y === cur ? n * 1000 : n);
     }));
-    labels = Object.keys(all).sort((a,b) => all[b] - all[a]).slice(0, 8);
-    series = y => labels.map(o => (d.data[y].offers[o] || 0));
+        // Show only the four TM Music offers, with Platinum and Debranded Platinum
+    // combined. Everything else is hidden from this comparison.
+    const CMP_KEEP = {
+      'platinum':'Platinum', 'debrandedplatinum':'Platinum',
+      'vippackages':'VIP Packages', 'tmrequest':'TM Request',
+      'artistsignup':'Artist Sign-Up', 'artistsignedup':'Artist Sign-Up', 'asu':'Artist Sign-Up'
+    };
+    const keyOf = o => CMP_KEEP[String(o).toLowerCase().replace(/[^a-z]/g,'')];
+    labels = ['Platinum','VIP Packages','Artist Sign-Up','TM Request'];
+    series = y => labels.map(lab => Object.entries(d.data[y].offers)
+      .reduce((s,[o,n]) => s + (keyOf(o) === lab ? n : 0), 0));
   }
 
   if(CHARTS.compare){ try{ CHARTS.compare.destroy(); }catch(e){} }
