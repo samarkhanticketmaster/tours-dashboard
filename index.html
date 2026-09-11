@@ -1603,6 +1603,7 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
 // Parses the aggregator's published "Errors" tab into panel rows.
 // Finds the header row by name so an extra blank leading row can't break it.
 function parseLiveErrors(rows){
+    LIVE_ERRORS_OUT_OF_PERIOD = 0;
   let head = -1;
   for(let i=0;i<rows.length;i++){
     const cells = rows[i].map(c => (c||'').trim().toLowerCase());
