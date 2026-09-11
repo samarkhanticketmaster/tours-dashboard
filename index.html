@@ -1477,7 +1477,7 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
   CHARTS[cfg.kRate] = new Chart(document.getElementById(cfg.rate), {
     type:'bar',
     data:{labels:rated.map(c=>c.c),datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
-      backgroundColor:rated.map(c=>errColor(c.rate)),borderRadius:4}]},
+      backgroundColor:rated.map(c=>errColor(c.rate)),borderRadius:4,minBarLength:4}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
         const c=rated[ctx.dataIndex]; return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
