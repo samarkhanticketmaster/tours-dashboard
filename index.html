@@ -1446,12 +1446,22 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
   const agg = aggregateAccuracy(rows, toursByMarket);
 
   // Only markets with tours in the period can have a rate.
-  const rated = agg.markets.filter(m => m.rate !== null).sort((a,b) => b.rate - a.rate);
+    const rated = agg.markets.filter(m => m.rate !== null).sort((a,b) => b.rate - a.rate);
+
+  // A market needs at least this many tours IN THIS PERIOD before we colour it
+  // as performing badly. Austria was shown in red as the worst market for
+  // Feb-Mar off a single tour. Below the threshold the bar stays grey and the
+  // tour count is shown next to the name, so the rate is still visible but is
+  // not presented as a verdict.
+  const ACC_MIN_TOURS = 3;
+  const bandable = m => m.tours >= ACC_MIN_TOURS;
+
   if(CHARTS[cfg.kRate]){ try{ CHARTS[cfg.kRate].destroy(); }catch(e){} }
   CHARTS[cfg.kRate] = new Chart(document.getElementById(cfg.rate), {
     type:'bar',
-    data:{labels:rated.map(c=>c.c),datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
-      backgroundColor:rated.map(c=>errColor(c.rate)),borderRadius:4}]},
+    data:{labels:rated.map(c=>bandable(c) ? c.c : c.c + ' (' + c.tours + ' tours)'),
+      datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
+      backgroundColor:rated.map(c=>bandable(c) ? errColor(c.rate) : '#C9C9C9'),borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
         const c=rated[ctx.dataIndex]; return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
