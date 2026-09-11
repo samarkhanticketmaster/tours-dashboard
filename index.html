@@ -1585,6 +1585,11 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
             + (LIVE_TOURS_UNTRACKED === 1 ? '' : 's')
             + ' excluded (sheet has no error log)';
     }
+        if(cfg.period === 'live' && LIVE_ERRORS_OUT_OF_PERIOD > 0){
+      text += ' · ' + LIVE_ERRORS_OUT_OF_PERIOD + ' error'
+            + (LIVE_ERRORS_OUT_OF_PERIOD === 1 ? '' : 's')
+            + ' excluded (announced before June 2026)';
+    }
     sum.textContent = text;
   }
 
