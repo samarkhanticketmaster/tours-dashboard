@@ -1486,6 +1486,30 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
   });
 
   const types = Object.entries(agg.types).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);
+  
+  // The biggest single error type was never called out, so the one obviously
+  // fixable thing on this tab was invisible. Worked out from the data rather
+  // than typed in, so it stays right as the numbers move.
+  const typesCanvas = document.getElementById(cfg.types);
+  if(typesCanvas && typesCanvas.parentElement && typesCanvas.parentElement.parentElement){
+    const tCard = typesCanvas.parentElement.parentElement;
+    let hl = document.getElementById(cfg.types + '-headline');
+    if(!hl){
+      hl = document.createElement('div');
+      hl.id = cfg.types + '-headline';
+      hl.style.cssText = 'font-size:13px;margin-top:10px;padding:10px 12px;' +
+        'background:#FFF6E5;border-left:3px solid #E89B2A;border-radius:4px;color:#5A4A2A;';
+      tCard.appendChild(hl);
+    }
+    const errTotal = types.reduce((s,e) => s + e[1], 0);
+    if(types.length && errTotal > 0){
+      const share = Math.round((types[0][1] / errTotal) * 100);
+      hl.textContent = 'Biggest single issue: ' + types[0][0] + ' — ' + types[0][1] +
+        ' of ' + errTotal + ' errors (' + share + '%). One specific, fixable thing.';
+    } else {
+      hl.textContent = '';
+    }
+  }
   if(CHARTS[cfg.kTypes]){ try{ CHARTS[cfg.kTypes].destroy(); }catch(e){} }
   CHARTS[cfg.kTypes] = new Chart(document.getElementById(cfg.types), {
     type:'bar',
