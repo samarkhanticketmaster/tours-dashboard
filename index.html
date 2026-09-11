@@ -1446,22 +1446,38 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
   const agg = aggregateAccuracy(rows, toursByMarket);
 
   // Only markets with tours in the period can have a rate.
-    const rated = agg.markets.filter(m => m.rate !== null).sort((a,b) => b.rate - a.rate);
-
-  // A market needs at least this many tours IN THIS PERIOD before we colour it
-  // as performing badly. Austria was shown in red as the worst market for
-  // Feb-Mar off a single tour. Below the threshold the bar stays grey and the
-  // tour count is shown next to the name, so the rate is still visible but is
-  // not presented as a verdict.
+      // A market needs at least this many tours in the period before we rate it.
+  // Austria was shown as the worst market for Feb-Mar off two tours, and its
+  // rate of 3.5 stretched the axis so far that everyone else was unreadable.
+  // Markets below the threshold are listed under the chart instead.
   const ACC_MIN_TOURS = 3;
-  const bandable = m => m.tours >= ACC_MIN_TOURS;
+  const rated   = agg.markets.filter(m => m.rate !== null && m.tours >= ACC_MIN_TOURS)
+                             .sort((a,b) => b.rate - a.rate);
+  const unrated = agg.markets.filter(m => m.rate !== null && m.tours <  ACC_MIN_TOURS)
+                             .sort((a,b) => b.rate - a.rate);
+
+  // Name the held-back markets so nothing is quietly dropped.
+  const rateCanvas = document.getElementById(cfg.rate);
+  if(rateCanvas && rateCanvas.parentElement && rateCanvas.parentElement.parentElement){
+    const card = rateCanvas.parentElement.parentElement;
+    let un = document.getElementById(cfg.rate + '-unrated');
+    if(!un){
+      un = document.createElement('div');
+      un.id = cfg.rate + '-unrated';
+      un.style.cssText = 'font-size:12px;color:#999;margin-top:8px;';
+      card.appendChild(un);
+    }
+    un.textContent = unrated.length
+      ? 'Not rated this period, too few tours to judge: ' + unrated.map(m =>
+          m.c + ' (' + m.tours + (m.tours === 1 ? ' tour' : ' tours') + ')').join(', ')
+      : '';
+  }
 
   if(CHARTS[cfg.kRate]){ try{ CHARTS[cfg.kRate].destroy(); }catch(e){} }
   CHARTS[cfg.kRate] = new Chart(document.getElementById(cfg.rate), {
     type:'bar',
-    data:{labels:rated.map(c=>bandable(c) ? c.c : c.c + ' (' + c.tours + ' tours)'),
-      datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
-      backgroundColor:rated.map(c=>bandable(c) ? errColor(c.rate) : '#C9C9C9'),borderRadius:4}]},
+    data:{labels:rated.map(c=>c.c),datasets:[{data:rated.map(c=>+c.rate.toFixed(2)),
+      backgroundColor:rated.map(c=>errColor(c.rate)),borderRadius:4}]},
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{
         const c=rated[ctx.dataIndex]; return ` ${ctx.raw} per tour (${c.errors}/${c.tours})`;}}}},
