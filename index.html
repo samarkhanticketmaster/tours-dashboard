@@ -74,7 +74,7 @@ tr:last-child td { border-bottom: none; }
   </div>
   <div class="meta">
     <span id="live-status">Loading live data…</span>
-    <strong>15 Markets</strong>
+    <strong id="hdr-markets">15 Markets</strong>
   </div>
 </div>
 
@@ -1102,8 +1102,16 @@ function buildAll(RAW_TOURS){
   const marketCounts = {};
   RAW_TOURS.forEach(t => t.markets.forEach(m => {
     const mk = m.trim(); if(!mk) return;
-    marketCounts[mk] = (marketCounts[mk]||0) + 1;
+     marketCounts[mk] = (marketCounts[mk]||0) + 1;
   }));
+
+  // Header count, driven by the data rather than typed in, and labelled so it
+  // is clear it means markets with tours this year, not markets we cover.
+  const hdrMarkets = document.getElementById('hdr-markets');
+  if(hdrMarkets){
+    const n = Object.keys(marketCounts).length;
+    hdrMarkets.textContent = n + ' markets with tours';
+  }
   const levelCounts = {1:0,2:0,3:0};
   RAW_TOURS.forEach(t => { if(levelCounts[t.level]!==undefined) levelCounts[t.level]++; });
   const offerCounts = {};
