@@ -1267,7 +1267,11 @@ const ERR_SHORT = {
 // Published CSV of the aggregator's "Errors" tab.
 // Left blank deliberately: until it's set, the June panel says so rather than
 // showing numbers nobody can trace to a source.
-const LIVE_ERRORS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=1922219910&single=true&output=csv';
+// The live panel covers June 2026 onwards. Anything earlier belongs to a
+// baseline period, or to no period at all, and must not land here.
+const LIVE_PERIOD_START = new Date('2026-06-01T00:00:00Z');
+let LIVE_ERRORS_OUT_OF_PERIOD = 0;
+  const LIVE_ERRORS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=1922219910&single=true&output=csv';
 
 // Published CSV of the aggregator's "Tour index" tab — one row per tour sheet.
 // This is the correct denominator for errors-per-tour: summing per-market tour
@@ -1604,11 +1608,19 @@ function parseLiveErrors(rows){
   const iM = h.indexOf('market'), iT = h.indexOf('error type'), iP = h.indexOf('period');
   const iTour = h.indexOf('tour name');
   const iCtx = h.indexOf('error context');
+  const iDate = h.indexOf('announce date');
   const out = [];
   for(let r = head+1; r < rows.length; r++){
     const market = (rows[r][iM] || '').trim();
     const type = (rows[r][iT] || '').trim();
     if(!market || !type) continue;
+        // The aggregator sweeps every sheet in the shared drive with no date
+    // cutoff, so an older tour's sheet can bring pre-June errors into the
+    // feed. Keep them out of a period they don't belong to.
+    if(iDate >= 0){
+      const d = new Date((rows[r][iDate] || '').trim());
+      if(!isNaN(d.getTime()) && d < LIVE_PERIOD_START){ LIVE_ERRORS_OUT_OF_PERIOD++; continue; }
+    }
     // The live tab is one row per occurrence, so each row counts as 1.
     const tour = iTour >= 0 ? (rows[r][iTour]||'').trim() : '';
     const ctx = iCtx >= 0 ? (rows[r][iCtx]||'').trim() : '';
