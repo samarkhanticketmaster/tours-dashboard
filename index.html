@@ -1344,7 +1344,13 @@ function accStatStrip(period, agg, denom, basis){
     causeMain = '<div class="acc-sv-sm">' + ctxEntries[0][1]
               + ' <span style="font-size:13px;color:#999;font-weight:400;">'
               + ctxEntries[0][0].toLowerCase() + '</span></div>';
-    causeSub  = ctxEntries.slice(1, 3).map(e => e[1] + ' ' + e[0].toLowerCase()).join(' \u00b7 ') || '\u2014';
+    causeSub  = ctxEntries.slice(1, 3).map(e => e[1] + ' ' + e[0].toLowerCase()).join(' \u00b7 ') || '\u2014';    // Anything past the third cause has nowhere to go in the tile, which makes
+    // the tile stop reconciling with the error count. List the remainder
+    // rather than dropping it off the end.
+    const restCtx = ctxEntries.slice(3);
+    if(restCtx.length){
+      causeSub += ' · +' + restCtx.map(e => e[1] + ' ' + e[0].toLowerCase()).join(', ');
+    }
   }
 
   return ''
