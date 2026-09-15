@@ -1110,7 +1110,30 @@ async function init(){
     if(meta) meta.textContent = '⚠ Could not load live data: '+e.message;
   }
 }
-
+// EMEA is Europe, the Middle East and Africa. Agreed with Lizz: in-region
+// countries are markets in their own right, including Middle East and Africa.
+// The tour data occasionally carries a country from outside the region, because
+// a tour tagged "EMEA APAC" lists its Asian dates in the same field. Counting
+// one would invent a market on an EMEA dashboard.
+//
+// This is an exclusion list, not an inclusion list, on purpose: a new European
+// or African market then appears on its own, rather than being silently dropped
+// because nobody remembered to add it.
+const OUT_OF_REGION = {
+  'new zealand':1,'australia':1,'japan':1,'south korea':1,'china':1,
+  'hong kong':1,'singapore':1,'taiwan':1,'thailand':1,'philippines':1,
+  'indonesia':1,'malaysia':1,'vietnam':1,'india':1,
+  'usa':1,'united states':1,'canada':1,'mexico':1,'brazil':1,
+  'argentina':1,'chile':1,'colombia':1,'peru':1
+};
+let MARKETS_DROPPED = {};
+function inRegion_(mk){
+  if(OUT_OF_REGION[String(mk).trim().toLowerCase()]){
+    MARKETS_DROPPED[mk] = 1;
+    return false;
+  }
+  return true;
+}
 const MONTHS = ["Jan-26","Feb-26","Mar-26","Apr-26","May-26","Jun-26","Jul-26","Aug-26","Sep-26","Oct-26","Nov-26","Dec-26"];
 const TOTAL_CALLS = 6; // total MMR forum calls held to date — bump this when a new forum call happens
 
@@ -1122,6 +1145,7 @@ function buildAll(RAW_TOURS){
   const marketCounts = {};
   RAW_TOURS.forEach(t => t.markets.forEach(m => {
     const mk = m.trim(); if(!mk) return;
+        if(!inRegion_(mk)) return;
      marketCounts[mk] = (marketCounts[mk]||0) + 1;
   }));
 
@@ -1142,6 +1166,7 @@ function buildAll(RAW_TOURS){
   const marketByMonth = {};
   RAW_TOURS.forEach(t => t.markets.forEach(m => {
     const mk = m.trim(); if(!mk) return;
+        if(!inRegion_(mk)) return;
     if(!marketByMonth[mk]) marketByMonth[mk] = {};
     marketByMonth[mk][t.month] = (marketByMonth[mk][t.month]||0) + 1;
   }));
