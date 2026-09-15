@@ -2016,6 +2016,7 @@ function build(RAW_TOURS, M){
   const levelByMarket = {};
   RAW_TOURS.forEach(t => t.markets.forEach(m => {
     const mk = m.trim(); if(!mk) return;
+        if(!inRegion_(mk)) return;
     if(!levelByMarket[mk]) levelByMarket[mk] = {1:0,2:0,3:0};
     levelByMarket[mk][t.level]++;
   }));
@@ -2030,7 +2031,7 @@ function build(RAW_TOURS, M){
   // many other markets it typically shares a routing with.
   const soloStats = {};
   RAW_TOURS.forEach(t => {
-    const mkts = [...new Set(t.markets.map(m=>m.trim()).filter(Boolean))];
+      const mkts = [...new Set(t.markets.map(m=>m.trim()).filter(Boolean))].filter(inRegion_);
     mkts.forEach(mk => {
       if(!soloStats[mk]) soloStats[mk] = {tours:0, solo:0, coMarkets:0};
       soloStats[mk].tours++;
