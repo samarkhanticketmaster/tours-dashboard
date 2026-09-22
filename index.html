@@ -142,7 +142,7 @@ tr:last-child td { border-bottom: none; }
     <div class="card">
       <div class="ct">Promoters — 2026</div>
       <div class="cd" id="promoter-sub">Tours by promoter · individual client partners rolled up to their company</div>
-      <div style="position:relative;width:100%;height:200px;"><canvas id="c-promoters"></canvas></div>
+      <div style="position:relative;width:100%;height:320px;"><canvas id="c-promoters"></canvas></div>
       <div id="promoter-note" style="font-size:12px;color:#999;margin-top:8px;"></div>
     </div>
   </div>
@@ -1958,9 +1958,16 @@ function build(RAW_TOURS, M){
     acc[g] = (acc[g]||0) + n;
     return acc;
   },{});
-  const promoterEntries = Object.entries(promoterGroups)
+  let promoterEntries = Object.entries(promoterGroups)
     .sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
   const promoterTotal = promoterEntries.reduce((s,e)=>s+e[1],0);
+    // Lizz asked for a top 10. The full list never fitted the chart, so it was
+  // unreadable. Total stays computed from everyone, so the percentages are a
+  // share of all tours rather than a share of the ten shown.
+    const promoterCompanies = promoterEntries.length;
+  const promoterRest = promoterEntries.slice(10);
+  const promoterRestTours = promoterRest.reduce((s,e)=>s+e[1],0);
+  promoterEntries = promoterEntries.slice(0, 10);
   const promoterEl = document.getElementById('c-promoters');
 
   if(promoterEl && promoterEntries.length){
@@ -1983,7 +1990,10 @@ function build(RAW_TOURS, M){
     const contacts = Object.keys(promoterCounts||{}).length;
     pNote.textContent = top[0] + ' accounts for ' + Math.round(top[1]/promoterTotal*100)
       + '% of tours \u00b7 ' + contacts + ' named client partners across '
-      + promoterEntries.length + ' ' + (promoterEntries.length === 1 ? 'promoter' : 'promoters');
+          + promoterCompanies + ' ' + (promoterCompanies === 1 ? 'promoter' : 'promoters');    if(promoterRest.length){
+      pNote.textContent += ' \u00b7 top 10 shown, ' + promoterRest.length
+        + ' other promoters with ' + promoterRestTours + ' tours between them';
+    }
   }
 
   const mktMonthly = {};
