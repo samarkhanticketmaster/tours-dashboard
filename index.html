@@ -196,6 +196,15 @@ tr:last-child td { border-bottom: none; }
   <!-- PRODUCTS -->
   <div id="tp-products" class="tp">
     <p class="tab-desc">Offer mix and tour level trends across 2026.</p>
+        <div class="card">
+      <div class="ct">Platinum penetration — 2026</div>
+      <div class="cd">Share of each market's tours carrying Platinum. Platinum and Debranded
+        Platinum count as one, so a tour with both is not counted twice.</div>
+      <div style="position:relative;width:100%;height:420px;"><canvas id="c-plat-market"></canvas></div>
+      <div class="cd" id="plat-note" style="margin-top:10px;"></div>
+      <div class="ct" style="margin-top:24px;">By tour level</div>
+      <div style="position:relative;width:100%;height:220px;"><canvas id="c-plat-level"></canvas></div>
+    </div>
     <div class="card">
       <div class="ct">Offer frequency — 2026</div>
       <div class="cd">% of tours that included each offer type</div>
@@ -2073,7 +2082,81 @@ function build(RAW_TOURS, M){
       drawToggle(b.dataset.p);
     });
   });
+  // Platinum penetration — where Platinum actually lands. Platinum and
+  // Debranded Platinum are one thing here, matching the merge used elsewhere,
+  // so a tour carrying both counts once. Markets below the sample threshold get
+  // no percentage, for the same reason Austria didn't deserve a red bar.
+  const PLAT_KEYS = {'platinum':1, 'debrandedplatinum':1};
+  const hasPlatinum_ = t => (t.offers || []).some(o =>
+    PLAT_KEYS[String(o).toLowerCase().replace(/[^a-z]/g,'')]);
 
+  const platByMarket = {};
+  const platByLevel = {1:{p:0,t:0}, 2:{p:0,t:0}, 3:{p:0,t:0}};
+  RAW_TOURS.forEach(t => {
+    const p = hasPlatinum_(t) ? 1 : 0;
+    if(platByLevel[t.level]){ platByLevel[t.level].t++; platByLevel[t.level].p += p; }
+    t.markets.forEach(m => {
+      const mk = m.trim(); if(!mk) return;
+      if(!inRegion_(mk)) return;
+      if(!platByMarket[mk]) platByMarket[mk] = {p:0, t:0};
+      platByMarket[mk].t++; platByMarket[mk].p += p;
+    });
+  });
+
+  const platRated = Object.keys(platByMarket)
+    .filter(mk => platByMarket[mk].t >= LEVEL_MIN_SAMPLE)
+    .map(mk => ({mk: mk, share: platByMarket[mk].p / platByMarket[mk].t,
+                 p: platByMarket[mk].p, t: platByMarket[mk].t}))
+    .sort((a,b) => b.share - a.share);
+
+  const platEl = document.getElementById('c-plat-market');
+  if(platEl && platRated.length){
+    if(CHARTS.platMarket){ try{ CHARTS.platMarket.destroy(); }catch(e){} }
+    CHARTS.platMarket = new Chart(platEl, {
+      type:'bar',
+      data:{labels:platRated.map(r=>r.mk), datasets:[{
+        data:platRated.map(r=>Math.round(r.share*100)),
+        backgroundColor:'#7F77DD', borderRadius:4}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+          const r = platRated[ctx.dataIndex];
+          return ' ' + ctx.raw + '% · ' + r.p + ' of ' + r.t + ' tours';}}}},
+        scales:{x:{grid:{color:GC}, ticks:{font:BF, color:TC}, beginAtZero:true, max:100,
+                   title:{display:true, text:'% of tours with Platinum',
+                          font:{family:BF.family, size:10}, color:TC}},
+                y:{grid:{display:false}, ticks:{font:{family:BF.family, size:11}, color:TC}}}}
+    });
+  }
+
+  // Markets below the threshold are named rather than dropped silently.
+  const platSmall = Object.keys(platByMarket)
+    .filter(mk => platByMarket[mk].t < LEVEL_MIN_SAMPLE)
+    .sort((a,b) => platByMarket[b].t - platByMarket[a].t);
+  const platNote = document.getElementById('plat-note');
+  if(platNote){
+    platNote.textContent = platSmall.length
+      ? platSmall.join(', ') + ' had fewer than ' + LEVEL_MIN_SAMPLE
+        + ' tours, so no percentage is shown for them.'
+      : '';
+  }
+
+  const platLevelEl = document.getElementById('c-plat-level');
+  if(platLevelEl){
+    const lv = [1,2,3].filter(n => platByLevel[n].t > 0);
+    if(CHARTS.platLevel){ try{ CHARTS.platLevel.destroy(); }catch(e){} }
+    CHARTS.platLevel = new Chart(platLevelEl, {
+      type:'bar',
+      data:{labels:lv.map(n=>'Level '+n), datasets:[{
+        data:lv.map(n=>Math.round(platByLevel[n].p / platByLevel[n].t * 100)),
+        backgroundColor:'#7F77DD', borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+          const n = lv[ctx.dataIndex];
+          return ' ' + ctx.raw + '% · ' + platByLevel[n].p + ' of ' + platByLevel[n].t + ' tours';}}}},
+        scales:{y:{grid:{color:GC}, ticks:{font:BF, color:TC}, beginAtZero:true, max:100},
+                x:{grid:{display:false}, ticks:{font:BF, color:TC}}}}
+    });
+  }
   const levelByMarket = {};
   RAW_TOURS.forEach(t => t.markets.forEach(m => {
     const mk = m.trim(); if(!mk) return;
