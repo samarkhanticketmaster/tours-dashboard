@@ -251,7 +251,12 @@ tr:last-child td { border-bottom: none; }
       <button class="pbtn" onclick="switchAccPeriod(this,'apr-may')">Apr – May 2026</button>
       <button class="pbtn" onclick="switchAccPeriod(this,'jun')">June 2026 onwards</button>
     </div>
-
+      <div class="cd" style="margin:-8px 0 14px;">
+        Feb–Mar and Apr–May come from the manual Announcement Issues Tracker and are split
+        the way that file was kept — 15 tours, then 7. June onwards is read automatically
+        from each tour's announcement sheet. The periods are uneven because they follow how
+        the data was collected, not the calendar.
+      </div>
     <!-- ── JAN–MAR ── -->
     <div id="acc-jan-mar" class="acc-panel on">
       <div class="acc-strip" id="acc-stats-jm"></div>
@@ -1294,6 +1299,34 @@ const ERR_SHORT = {
 // showing numbers nobody can trace to a source.
 // The live panel covers June 2026 onwards. Anything earlier belongs to a
 // baseline period, or to no period at all, and must not land here.
+  // Eleven error types is too many to read as a chart, so they group into three
+// families by what actually went wrong. Agreed with Samar, Sept 2026.
+//   Wrong content    — it was there, but it was incorrect      → points at QA
+//   Timing           — it was right, but it was late           → points at process
+//   Missing entirely — it never appeared at all                → points at capacity
+// Matched on a lowercased key so a stray capital or space can't drop a type.
+const ERROR_FAMILY_MAP = {
+  'early image - within 30 mins':      'Wrong content',
+  'early image - beyond 30 mins':      'Wrong content',
+  'improperly positioned image':       'Wrong content',
+  'incorrect / delayed image':         'Wrong content',
+  'incorrect edp + search':            'Wrong content',
+  'error in social post':              'Wrong content',
+  'artist naming error':               'Wrong content',
+  'late about copy / no about module': 'Timing',
+  'late (30 mins plus) / no socials':  'Timing',
+  'fewer socials than agreed':         'Missing entirely',
+  'missing spotlight':                 'Missing entirely'
+};
+function errorFamily_(t){
+  const f = ERROR_FAMILY_MAP[String(t || '').trim().toLowerCase()];
+  if(!f){
+    // A new error type has appeared. Say so rather than quietly mis-filing it.
+    console.warn('Unclassified error type:', t);
+    return 'Unclassified';
+  }
+  return f;
+}
 const LIVE_PERIOD_START = new Date('2026-06-01T00:00:00Z');
 let LIVE_ERRORS_OUT_OF_PERIOD = 0;
   const LIVE_ERRORS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=1922219910&single=true&output=csv';
@@ -1545,6 +1578,24 @@ function renderAccuracyPanel(panelKey, rows, marketByMonth){
   // The biggest single error type was never called out, so the one obviously
   // fixable thing on this tab was invisible. Worked out from the data rather
   // than typed in, so it stays right as the numbers move.
+      // Families summary, above the biggest-single-issue callout.
+    const fCanvas = document.getElementById(cfg.types);
+    if(fCanvas && fCanvas.parentElement && fCanvas.parentElement.parentElement){
+      const fCard = fCanvas.parentElement.parentElement;
+      let fam = document.getElementById(cfg.types + '-families');
+      if(!fam){
+        fam = document.createElement('div');
+        fam.id = cfg.types + '-families';
+        fam.style.cssText = 'font-size:13px;margin-top:10px;color:#555;';
+        fCard.appendChild(fam);
+      }
+      const famCounts = {};
+      types.forEach(e => { const f = errorFamily_(e[0]); famCounts[f] = (famCounts[f] || 0) + e[1]; });
+      const famEntries = Object.entries(famCounts).sort((a,b) => b[1] - a[1]);
+      fam.textContent = famEntries.length
+        ? 'By what went wrong: ' + famEntries.map(e => e[0] + ' ' + e[1]).join('  ·  ')
+        : '';
+    }
   const typesCanvas = document.getElementById(cfg.types);
   if(typesCanvas && typesCanvas.parentElement && typesCanvas.parentElement.parentElement){
     const tCard = typesCanvas.parentElement.parentElement;
