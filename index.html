@@ -419,7 +419,7 @@ tr:last-child td { border-bottom: none; }
       </div>
       <div class="card" style="margin-bottom:0">
         <div class="ct">Market participation</div>
-        <div class="cd">Messages sent per market rep (excl. central team)</div>
+        <div class="cd">Messages sent per market, excluding the central team</div>
         <div style="position:relative;width:100%;height:420px;"><canvas id="c-participation"></canvas></div>
       </div>
     </div>
@@ -2371,13 +2371,43 @@ function build(RAW_TOURS, M){
     options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
       scales:{x:{grid:{color:GC},ticks:{font:BF,color:TC}},y:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC}}}}
   });
+    // Bands rather than a ranked list. Ordering colleagues 1 to 21 reads as a
+  // league table, and the point of this tab is to show where support is
+  // needed, not who is winning. Bands are defined by what actually happened
+  // rather than an invented score, and markets are alphabetical inside a band
+  // so no ordering is implied. Markets with nothing recorded are shown and
+  // labelled rather than left to sit silently at the bottom.
   const et = document.getElementById('eng-table');
-  [...ENGAGEMENT].sort((a,b)=>(b.call+b.slack)-(a.call+a.slack)).forEach(e=>{
-    const pct=Math.round(e.slack/maxSlack*100)||0;
-    const ecnt=(typeof e.calls==='number'?e.calls:(e.call?1:0));
-    et.innerHTML+=`<tr><td>${e.m}</td><td class="r">${e.call?`<span class="badge" style="background:#7F77DD;color:#fff;">${Math.round(ecnt/TOTAL_CALLS*100)}% (${ecnt}/${TOTAL_CALLS})</span>`:'<span class="badge br">✗ No</span>'}</td><td class="r">${e.slack||'—'}</td>
-      <td style="min-width:140px;padding-right:16px"><div style="font-size:11px;color:#888;margin-bottom:3px">${e.slack>0?e.slack+' interactions':e.call?'Call only':'No activity'}</div>
-      <div class="eng-bar"><div class="eng-fill" style="width:${pct}%;background:${e.slack>8?'#378ADD':e.slack>3?'#7F77DD':'#aaa'}"></div></div></td></tr>`;
+  const engCalls_ = e => (typeof e.calls === 'number' ? e.calls : (e.call ? 1 : 0));
+  const engBandOf_ = e => {
+    const c = engCalls_(e), s = e.slack || 0;
+    if(c > 0 && s > 0) return 0;
+    if(c > 0 || s > 0) return 1;
+    return 2;
+  };
+  const ENG_BANDS = [
+    {label:'Active on calls and Slack', note:'attended at least one forum and posted in the channel'},
+    {label:'Active on one channel',     note:'either attending or posting, but not both'},
+    {label:'No recorded activity',      note:'no forum attendance and no Slack activity'}
+  ];
+  ENG_BANDS.forEach((band, i) => {
+    const inBand = ENGAGEMENT.filter(e => engBandOf_(e) === i)
+      .sort((a,b) => a.m.localeCompare(b.m));
+    if(!inBand.length) return;
+    et.innerHTML += '<tr><td colspan="4" style="padding-top:16px;border-bottom:none;font-size:12px;color:#555">'
+      + '<strong>' + band.label + '</strong> · ' + inBand.length + ' '
+      + (inBand.length === 1 ? 'market' : 'markets')
+      + ' <span style="color:#999">· ' + band.note + '</span></td></tr>';
+    inBand.forEach(e => {
+      const c = engCalls_(e), s = e.slack || 0;
+      const did = (c > 0 && s > 0) ? 'Calls and Slack'
+                : (c > 0) ? 'Calls only'
+                : (s > 0) ? 'Slack only' : 'None recorded';
+      et.innerHTML += '<tr><td>' + e.m + '</td>'
+        + '<td class="r">' + (c > 0 ? c + ' of ' + TOTAL_CALLS : '—') + '</td>'
+        + '<td class="r">' + (s > 0 ? s : '—') + '</td>'
+        + '<td style="font-size:12px;color:#888">' + did + '</td></tr>';
+    });
   });
 
   // MMR Insights
