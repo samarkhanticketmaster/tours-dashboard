@@ -2352,16 +2352,25 @@ function build(RAW_TOURS, M){
   buildAccuracyCharts(marketByMonth);
 
   // Engagement KPI cards (computed live from the Engagement sheet)
+    // Four tiles that can't contradict each other or the table below. The old
+  // set had "markets on call" and "active markets", which differ only when a
+  // market posts without attending — so they usually showed the same number
+  // with no visible reason. These are the three bands plus the Slack total,
+  // and the bands always sum to the market count.
   const engTotal = ENGAGEMENT.length;
-  const engOnCall = ENGAGEMENT.filter(e=>e.call).length;
   const engSlackTotal = ENGAGEMENT.reduce((a,e)=>a+e.slack,0);
-  const engActive = ENGAGEMENT.filter(e=>e.call||e.slack>0).length;
-  const engTop = [...ENGAGEMENT].sort((a,b)=>b.slack-a.slack)[0] || {m:'—',slack:0};
+  const engCallsOf_ = e => (typeof e.calls === 'number' ? e.calls : (e.call ? 1 : 0));
+  const engBoth = ENGAGEMENT.filter(e => engCallsOf_(e) > 0 && e.slack > 0).length;
+  const engOne  = ENGAGEMENT.filter(e => {
+    const c = engCallsOf_(e) > 0, s = e.slack > 0;
+    return (c || s) && !(c && s);
+  }).length;
+  const engNone = ENGAGEMENT.filter(e => engCallsOf_(e) === 0 && !(e.slack > 0)).length;
   document.getElementById('engagement-kpis').innerHTML=`
-    <div class="mv"><div class="ml">Markets on call</div><div class="mn">${engOnCall}</div><div class="ms">of ${engTotal} markets</div></div>
+    <div class="mv"><div class="ml">Active on both</div><div class="mn">${engBoth}</div><div class="ms">calls and Slack</div></div>
+    <div class="mv"><div class="ml">Active on one</div><div class="mn">${engOne}</div><div class="ms">attending or posting, not both</div></div>
+    <div class="mv"><div class="ml">No recorded activity</div><div class="mn">${engNone}</div><div class="ms">of ${engTotal} markets</div></div>
     <div class="mv"><div class="ml">Total Slack activity</div><div class="mn">${engSlackTotal}</div><div class="ms">comments &amp; replies</div></div>
-    <div class="mv"><div class="ml">Most active on Slack</div><div class="mn" style="font-size:18px;margin-top:4px;">${engTop.m}</div><div class="badge bg">${engTop.slack} interactions</div></div>
-    <div class="mv"><div class="ml">Active markets</div><div class="mn">${engActive}</div><div class="ms">at least one touchpoint</div><div class="badge bi">of ${engTotal} total</div></div>
   `;
 
   // Engagement — MMR Monthly Forum status grid (attended grouped first, then not-yet)
@@ -2375,7 +2384,7 @@ function build(RAW_TOURS, M){
     const yes = cnt>0;
     return `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:7px;padding:11px 13px;border-radius:8px;border:1px solid ${yes?'#dbe9c6':'#e8e8e0'};background:${yes?'#eaf3de':'#f5f5f0'};">
        <span style="font-size:13px;line-height:1.25;color:${yes?'#3b6d11':'#888'};">${name}</span>
-       <span style="font-size:12px;font-weight:500;white-space:nowrap;border-radius:10px;padding:2px 10px;${yes?'background:#7F77DD;color:#fff;':'background:#ececec;color:#9a988f;'}">${yes?Math.round(cnt/TOTAL_CALLS*100)+'% ('+cnt+'/'+TOTAL_CALLS+')':'0%'}</span>
+       <span style="font-size:12px;font-weight:500;white-space:nowrap;border-radius:10px;padding:2px 10px;${yes?'background:#3b6d11;color:#fff;':'background:#ececec;color:#9a988f;'}">${yes?Math.round(cnt/TOTAL_CALLS*100)+'% ('+cnt+'/'+TOTAL_CALLS+')':'0%'}</span>
      </div>`;
   };
   fg.innerHTML = attended.map(e=>cell(e.m,(typeof e.calls==='number'?e.calls:e.call))).join('') + notYet.map(e=>cell(e.m,0)).join('');
