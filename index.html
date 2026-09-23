@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EMEA Marketing Tour Intelligence Dashboard</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #f5f5f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #2c2c2a; min-height: 100vh; }
 .header { background: #fff; border-bottom: 1px solid #e0e0d8; padding: 24px 36px 20px; display: flex; justify-content: space-between; align-items: flex-end; }
 .header h1 { font-size: 26px; font-weight: 600; color: #1a1a18; }
@@ -204,6 +203,12 @@ tr:last-child td { border-bottom: none; }
       <div class="cd" id="plat-note" style="margin-top:10px;"></div>
       <div class="ct" style="margin-top:24px;">By tour level</div>
       <div style="position:relative;width:100%;height:220px;"><canvas id="c-plat-level"></canvas></div>
+    </div>
+        <div class="card">
+      <div class="ct">Offer mix over time — 2026</div>
+      <div class="cd">Tours carrying each offer, by month. Counts rather than percentages,
+        because a quiet month would swing a percentage wildly.</div>
+      <div style="position:relative;width:100%;height:300px;"><canvas id="c-offers-time"></canvas></div>
     </div>
     <div class="card">
       <div class="ct">Offer frequency — 2026</div>
@@ -2177,6 +2182,42 @@ function build(RAW_TOURS, M){
           const n = lv[ctx.dataIndex];
           return ' ' + ctx.raw + '% · ' + platByLevel[n].p + ' of ' + platByLevel[n].t + ' tours';}}}},
         scales:{y:{grid:{color:GC}, ticks:{font:BF, color:TC}, beginAtZero:true, max:100},
+                x:{grid:{display:false}, ticks:{font:BF, color:TC}}}}
+    });
+  }
+    // Offers across the year. Everything else on this tab is a flat annual
+  // figure, so a trend was invisible. Counts rather than percentages on
+  // purpose — a month with three tours makes a percentage meaningless.
+  const offerByMonth = {};
+  RAW_TOURS.forEach(t => {
+    (t.offers || []).forEach(o => {
+      const ok = String(o).trim(); if(!ok) return;
+      if(!offerByMonth[ok]) offerByMonth[ok] = {};
+      offerByMonth[ok][t.month] = (offerByMonth[ok][t.month] || 0) + 1;
+    });
+  });
+  const offerTimeEl = document.getElementById('c-offers-time');
+  if(offerTimeEl){
+    const OFFER_COLOURS = ['#7F77DD', '#1D9E75', '#D85A30', '#378ADD', '#BA7517'];
+    const offerNames = Object.keys(offerByMonth).sort((a,b) =>
+      Object.values(offerByMonth[b]).reduce((s,n)=>s+n,0)
+      - Object.values(offerByMonth[a]).reduce((s,n)=>s+n,0));
+    if(CHARTS.offersTime){ try{ CHARTS.offersTime.destroy(); }catch(e){} }
+    CHARTS.offersTime = new Chart(offerTimeEl, {
+      type:'line',
+      data:{labels:MONTHS, datasets: offerNames.map((o,i) => ({
+        label:o,
+        data:MONTHS.map(m => offerByMonth[o][m] || 0),
+        borderColor:OFFER_COLOURS[i % OFFER_COLOURS.length],
+        backgroundColor:OFFER_COLOURS[i % OFFER_COLOURS.length],
+        borderWidth:2, tension:0.3, pointRadius:3
+      }))},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'bottom', labels:{font:BF, color:TC, boxWidth:12}},
+          tooltip:{callbacks:{label:ctx=>' ' + ctx.dataset.label + ': ' + ctx.raw
+            + (ctx.raw === 1 ? ' tour' : ' tours')}}},
+        scales:{y:{grid:{color:GC}, ticks:{font:BF, color:TC, precision:0}, beginAtZero:true,
+                   title:{display:true, text:'tours', font:{family:BF.family, size:10}, color:TC}},
                 x:{grid:{display:false}, ticks:{font:BF, color:TC}}}}
     });
   }
