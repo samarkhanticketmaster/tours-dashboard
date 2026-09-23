@@ -452,7 +452,9 @@ const OFFER_COLORS = ['#378ADD','#73726c','#E89B2A','#7F77DD','#1D9E75','#E24B4A
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?output=csv';
 const ENGAGEMENT_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRVIkAy9fbhJy6oj_cYzQiFShLzux2RTGyZT65dKhzMYZg3_McwQMQz3IaZEp37enSylpNye7dr-5ue/pub?gid=981015315&single=true&output=csv';
-
+// Did the engagement sheet actually load? If not the page falls back to the
+// copy in this file, and needs to say so rather than claiming to be live.
+let ENGAGEMENT_LIVE = false;
 // Live Airtable feed, via the Apps Script proxy. The proxy holds the API token
 // server-side — this page is public, so the token can never live here.
 const MARKETER_API_URL = 'https://script.google.com/macros/s/AKfycbxmhIRxpJeDajx8cp6hjZQSvemdBzM2Brd9V1xfrGw3NZJJ-7hFaJrc32KrymBIqsUL/exec';
@@ -1110,8 +1112,21 @@ async function init(){
     if(!tours.length) throw new Error('No tour rows parsed');
     try {
       const eres = await fetch(ENGAGEMENT_CSV_URL);
-      if(eres.ok){ const eng = rowsToEngagement(parseCSV(await eres.text())); if(eng) ENGAGEMENT = eng; }
+      if(eres.ok){
+        const eng = rowsToEngagement(parseCSV(await eres.text()));
+        if(eng){ ENGAGEMENT = eng; ENGAGEMENT_LIVE = true; }
+      }
     } catch(err){ console.error('Engagement load error:', err); }
+    // A failed fetch used to be invisible — the page fell back to the built-in
+    // copy and still said it was live. Say so on the tab instead.
+    if(!ENGAGEMENT_LIVE){
+      const es = document.getElementById('stamp-engagement');
+      if(es){
+        es.textContent = '⚠ Could not reach the engagement sheet · showing the built-in '
+          + 'copy, which may be out of date';
+        es.style.color = '#A32D2D';
+      }
+    }
     buildAll(tours);
     loadAccuracyLive();
     loadMarketerSplit();
