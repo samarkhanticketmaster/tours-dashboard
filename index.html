@@ -210,12 +210,7 @@ tr:last-child td { border-bottom: none; }
       <div class="cd">% of tours that included each offer type</div>
       <div style="position:relative;width:100%;height:460px;"><canvas id="c-offers"></canvas></div>
     </div>
-    <div class="g2">
-      <div class="card" style="margin-bottom:0">
-        <div class="ct">Offer breakdown</div>
-        <table style="margin-top:8px"><thead><tr><th>Offer</th><th class="r">Tours</th><th class="r">% of total</th></tr></thead>
-        <tbody id="product-table"></tbody></table>
-      </div>
+        <div>
       <div class="card" style="margin-bottom:0">
         <div class="ct">Tour level mix — 2026</div>
         <div class="cd">Percentage of tours at each level</div>
@@ -2255,7 +2250,8 @@ function build(RAW_TOURS, M){
   CHARTS.offers = new Chart(document.getElementById('c-offers'),{
     type:'bar',
     data:{labels:offerLabels,datasets:[{data:offerLabels.map(o=>Math.round(offerCounts[o]/totalTours*100)),backgroundColor:'#378ADD',borderRadius:4}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>' ' + ctx.raw + '% · ' + offerCounts[offerLabels[ctx.dataIndex]] + ' of ' + totalTours + ' tours'}}},
       scales:{x:{grid:{display:false},ticks:{font:{family:BF.family,size:11},color:TC,maxRotation:30}},y:{grid:{color:GC},ticks:{font:BF,color:TC,callback:v=>v+'%'},max:100}}}
   });
 
@@ -2266,10 +2262,7 @@ function build(RAW_TOURS, M){
       scales:{x:{grid:{display:false},ticks:{font:BF,color:TC}},y:{grid:{color:GC},ticks:{font:BF,color:TC,callback:v=>v+'%'},max:60}}}
   });
 
-  const pt = document.getElementById('product-table');
-  offerLabels.forEach(o => {
-    pt.innerHTML+=`<tr><td>${o}</td><td class="r">${offerCounts[o]}</td><td class="r">${Math.round(offerCounts[o]/totalTours*100)}%</td></tr>`;
-  });
+ 
 
   // Build accuracy charts
   buildAccuracyCharts(marketByMonth);
