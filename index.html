@@ -1348,7 +1348,35 @@ let ACC_MARKET_BY_MONTH = {};
 
 // ── Helpers ───────────────────────────────────────────────────
 function errColor(v){if(v>1.5)return'#E24B4A';if(v>=0.7)return'#E89B2A';if(v>0)return'#1D9E75';return'#639922';}
-
+// Each tab has a different source and a different freshness, and nothing on the
+// page said so. Overview, Markets and Offers are live from Airtable on every
+// load; Accuracy is a frozen baseline plus an hourly feed; MMR Insights is a
+// static analysis that only moves when someone re-runs it. Injected here rather
+// than added to six tab panels by hand, so there's one place to change it.
+const TAB_SOURCE = {
+  'overview':   'Live from Airtable · refreshed every time this page loads',
+  'markets':    'Live from Airtable · refreshed every time this page loads',
+  'products':   'Live from Airtable · refreshed every time this page loads',
+  'quality':    'Feb–May is a frozen baseline from the Announcement Issues Tracker · '
+              + 'June onwards refreshes hourly from the announcement sheets',
+  'engagement': 'From the MMR engagement sheet · refreshed every time this page loads',
+  'insights':   'Static analysis · only changes when someone re-runs it'
+};
+function stampTabs(){
+  Object.keys(TAB_SOURCE).forEach(id => {
+    const panel = document.getElementById('tp-' + id);
+    if(!panel || document.getElementById('stamp-' + id)) return;
+    const s = document.createElement('div');
+    s.id = 'stamp-' + id;
+    s.style.cssText = 'font-size:12px;color:#999;margin:-6px 0 14px;';
+    s.textContent = TAB_SOURCE[id];
+    const desc = panel.querySelector('.tab-desc');
+    if(desc && desc.nextSibling) panel.insertBefore(s, desc.nextSibling);
+    else panel.insertBefore(s, panel.firstChild);
+  });
+}
+document.addEventListener('DOMContentLoaded', stampTabs);
+stampTabs();
 function switchTab(btn,id){
   document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tn').forEach(b=>b.classList.remove('on'));
