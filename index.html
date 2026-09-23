@@ -413,8 +413,8 @@ tr:last-child td { border-bottom: none; }
     </div>
     <div class="g2" style="align-items:stretch">
       <div class="card" style="margin-bottom:0">
-        <div class="ct">Sentiment by market</div>
-        <div class="cd">Overall tone of each market's contributions</div>
+        <div class="ct">Notes by market</div>
+        <div class="cd">Overall themes each market raised</div>
         <div id="sentiment-container"></div>
       </div>
       <div class="card" style="margin-bottom:0">
@@ -2415,8 +2415,8 @@ function build(RAW_TOURS, M){
   });
   const sCls=s=>s==='positive'?'bg':s==='frustrated'?'br':'bi';
   const sIcon=s=>s==='positive'?'😊':s==='frustrated'?'😟':'😐';
-  document.getElementById('sentiment-container').innerHTML=`<table><thead><tr><th>Market</th><th>Tone</th><th>Note</th></tr></thead><tbody>`+
-    INSIGHTS.sentiment.map(s=>`<tr><td>${s.market}</td><td><span class="badge ${sCls(s.sentiment)}" style="margin-top:0">${sIcon(s.sentiment)} ${s.sentiment}</span></td><td style="font-size:12px;color:#666">${s.note}</td></tr>`).join('')+`</tbody></table>`;
+    document.getElementById('sentiment-container').innerHTML=`<table><thead><tr><th>Market</th><th>Note</th></tr></thead><tbody>`+
+    INSIGHTS.sentiment.map(s=>`<tr><td>${s.market}</td><td style="font-size:12px;color:#666">${s.note}</td></tr>`).join('')+`</tbody></table>`;
   document.getElementById('unresolved-container').innerHTML=INSIGHTS.unresolved.map(u=>`
     <div style="border-left:3px solid #E89B2A;padding:10px 14px;margin-bottom:10px;background:#fdfcf8;border-radius:0 6px 6px 0;">
       <div style="font-size:12px;font-weight:600;color:#1a1a18;margin-bottom:3px;">${u.market} <span style="font-weight:400;color:#888">· ${u.date}</span></div>
